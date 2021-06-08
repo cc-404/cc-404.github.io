@@ -10,4 +10,4 @@ Disallow: /notes/
 Disallow: /about/
 Disallow: /archives/
 Disallow: /categories/notes/
-Disallow /google03cba538c856571b.html
+Disallow: /google03cba538c856571b.html
