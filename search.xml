@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>idea自定义archetype</title>
+      <link href="/notes/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/"/>
+      <url>/notes/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/</url>
+      
+        <content type="html"><![CDATA[<ul><li><p>新建一个maven项目</p><p>  <img src="/notes/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/image-20210608155831815.png" alt="image-20210608155831815"></p></li><li><p>填写GroupId和ArtifactId以及Version</p><p>  <img src="/notes/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/image-20210608155917744.png" alt="image-20210608155917744"></p></li><li><p>修改好项目模板后，在Terminal中执行<code> mvn archetype:create-from-project</code></p></li><li><p>再运行，以下命令安装骨架至本地maven仓库</p>  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd target/generated-sources/archetype</span><br><span class="line">mvn install</span><br></pre></td></tr></table></figure></li><li><p>添加自定义archetype至idea，新建项目或者模块，选择Add Archetype…，输入GroupId、ArtifactId、Version，注意：默认生成的ArtifactId与项目的ArtifactId相比会添加后缀==-archetype==，即这里为==web-template-archetype====</p><p>  <img src="/notes/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/image-20210608160630418.png" alt="image-20210608160630418"></p></li></ul><h2 id="删除archetype"><a href="#删除archetype" class="headerlink" title="删除archetype"></a>删除archetype</h2><ul><li>idea中删除自定义archetype</li><li>主要是要删除UserArchetypes.xml文件的内容。不同操作系统的位置不一样。<ul><li>Mac系统<blockquote><p>${home}/Library/Caches/JetBrains/.IntelliJIdea*/Maven/Indices/UserArchetypes.xml</p></blockquote></li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> notes </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 笔记 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+  
+  
+</search>

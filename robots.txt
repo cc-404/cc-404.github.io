@@ -1,0 +1,13 @@
+User-agent: *
+
+Allow: /
+Allow: /tags/
+Allow: /tutorials/
+Allow: /categories/
+Allow: /categories/tutorials/
+
+Disallow: /notes/
+Disallow: /about/
+Disallow: /archives/
+Disallow: /categories/notes/
+Disallow /google03cba538c856571b.html
