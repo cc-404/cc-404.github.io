@@ -10,4 +10,5 @@ Disallow: /notes/
 Disallow: /about/
 Disallow: /archives/
 Disallow: /categories/notes/
-Disallow: /google03cba538c856571b.html
+
+Sitemap: https://blog.iz4.cc/search.xml
