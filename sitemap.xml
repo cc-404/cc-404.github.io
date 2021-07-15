@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://blog.iz4.cc/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/</loc>
+    
+    <lastmod>2021-07-15</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://blog.iz4.cc/note/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/</loc>
     
     <lastmod>2021-07-09</lastmod>
@@ -66,6 +73,27 @@
     <priority>0.6</priority>
   </url>
   
+  <url>
+    <loc>http://blog.iz4.cc/tags/Java/</loc>
+    <lastmod>2021-07-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.iz4.cc/tags/Spring/</loc>
+    <lastmod>2021-07-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.iz4.cc/tags/SpringBoot/</loc>
+    <lastmod>2021-07-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
 
   
   <url>
@@ -77,6 +105,13 @@
   
   <url>
     <loc>http://blog.iz4.cc/categories/note/</loc>
+    <lastmod>2021-07-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.iz4.cc/categories/article/</loc>
     <lastmod>2021-07-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
