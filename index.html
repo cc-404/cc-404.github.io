@@ -215,7 +215,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2021-07-24 17:41:21 / 修改时间：23:20:20" itemprop="dateCreated datePublished" datetime="2021-07-24T17:41:21+08:00">2021-07-24</time>
+              <time title="创建时间：2021-07-24 17:41:21 / 修改时间：23:39:37" itemprop="dateCreated datePublished" datetime="2021-07-24T17:41:21+08:00">2021-07-24</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -242,44 +242,14 @@
 <li>一开始想用selenium实现某网站的自动登录，这就不可避免的遇到验证码识别问题，要识别验证码那肯定得先获得验证，网上给的获取验证码图片的方法是，先利用WebDriver的save_screenshot函数对网页进行截图，然后再获得验证的图片大小并用location来定位获得验证码的坐标，最后从截图中截取出验证码来</li>
 <li>实际试的过程发现，还是有坑在里面，就是location定位的坐标跟截图里的对应不上，网上找了下相关文章，发现这个：<code>之所以会出现这个坐标偏差是因为windows系统下电脑设置的显示缩放比例造成的，location获取的坐标是按显示100%时得到的坐标，而截图所使用的坐标却是需要根据显示缩放比例缩放后对应的图片所确定的，因此就出现了偏差。 解决这个问题有三种方法：1.修改电脑显示设置为100%。这是最简单的方法；2.缩放截取到的页面图片，即将截图的size缩放为宽和高都除以缩放比例后的大小；3.修改Image.crop的参数，将参数元组的四个值都乘以缩放比例。</code>，但网上给的解决方案不是很好，因为需要写死缩放比例并且是windows下的情况，而我测试用的是mac os，测试好后打算放树莓派上跑，总不能改比例改来改去，有没有办法可以自动计算缩放比例？</li>
 </ul>
-<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ul>
-<li>这里想到了一个自动计算缩放比例方法，思路很简单，就是先利用selenium获取根标签&quot;html&quot;的size，再获取截图的size，两者长宽分别相比就出来了</li>
-<li>但是实际过程并没有这么简单，还有个小坑的地方就是，这么做理论上没什么问题，但测试发现还是出现了偏差，最后发现原因是save_screenshot截图截的就是浏览器显示出来的界面，但是有些网页比较长，会出现一部分页面没有被显示出来，但利用&quot;html&quot;标签获得的size却是获取的完整网页，所以这样计算的比例还是有问题</li>
-<li>最终方案：用selenium截长图，并用selenium获取&quot;html&quot;标签的size，将截图size和&quot;html&quot;的size相比得到缩放比例</li>
-</ul>
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><ul>
-<li><p>代码如下</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">from</span> selenium <span class="keyword">import</span> webdriver</span><br><span class="line"><span class="keyword">from</span> selenium.common.exceptions <span class="keyword">import</span> TimeoutException</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.common.by <span class="keyword">import</span> By</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.support <span class="keyword">import</span> expected_conditions <span class="keyword">as</span> EC</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.support.wait <span class="keyword">import</span> WebDriverWait</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.chrome.options <span class="keyword">import</span> Options</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">options = Options()</span><br><span class="line"><span class="comment"># 网上说selenium截长图需要使用无图形界面模式</span></span><br><span class="line">options.add_argument(<span class="string">&#x27;headless&#x27;</span>)</span><br><span class="line">browser = webdriver.Chrome(options=options)</span><br><span class="line">wait = WebDriverWait(browser, <span class="number">5</span>)</span><br><span class="line">login_url = <span class="string">&quot;https://www.91wii.com/member.php?mod=logging&amp;action=login&quot;</span></span><br><span class="line">browser.get(login_url)</span><br><span class="line"><span class="comment"># 用js获取页面的宽高</span></span><br><span class="line">width = browser.execute_script(<span class="string">&quot;return document.documentElement.scrollWidth&quot;</span>)</span><br><span class="line">height = browser.execute_script(<span class="string">&quot;return document.documentElement.scrollHeight&quot;</span>)</span><br><span class="line"><span class="comment"># 将浏览器的宽高设置成刚刚获取的宽高</span></span><br><span class="line">browser.set_window_size(width, height)</span><br><span class="line"><span class="comment"># 获取验证码所在的img标签</span></span><br><span class="line">img = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, <span class="string">&#x27;img[src*=&quot;seccode&quot;]&#x27;</span>)))</span><br><span class="line"><span class="comment"># 等待网页加载完毕</span></span><br><span class="line">time.sleep(<span class="number">3</span>)</span><br><span class="line"><span class="comment"># 截图并保存</span></span><br><span class="line">browser.save_screenshot(<span class="string">&#x27;temp.png&#x27;</span>)</span><br><span class="line"><span class="comment"># 获取html标签</span></span><br><span class="line">html = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, <span class="string">&#x27;html&#x27;</span>)))</span><br><span class="line"><span class="comment"># location定位验证码的坐标</span></span><br><span class="line">location=img.location</span><br><span class="line"><span class="comment"># 获取验证码的长宽</span></span><br><span class="line">size = img.size  </span><br><span class="line"><span class="comment"># 打开截图</span></span><br><span class="line">i = Image.<span class="built_in">open</span>(<span class="string">&quot;temp.png&quot;</span>)  </span><br><span class="line"><span class="comment"># 计算缩放比例</span></span><br><span class="line">w=i.size[<span class="number">0</span>]/html.size[<span class="string">&#x27;width&#x27;</span>]</span><br><span class="line">h=i.size[<span class="number">1</span>]/html.size[<span class="string">&#x27;height&#x27;</span>]</span><br><span class="line"><span class="comment"># 计算验证码在截图中的位置</span></span><br><span class="line">rangle = (<span class="built_in">int</span>(location[<span class="string">&#x27;x&#x27;</span>])*w, <span class="built_in">int</span>(location[<span class="string">&#x27;y&#x27;</span>])*h, <span class="built_in">int</span>(location[<span class="string">&#x27;x&#x27;</span>] + size[<span class="string">&#x27;width&#x27;</span>])*w,</span><br><span class="line">          <span class="built_in">int</span>(location[<span class="string">&#x27;y&#x27;</span>] + size[<span class="string">&#x27;height&#x27;</span>])*h)</span><br><span class="line"><span class="comment"># 使用Image的crop函数，从截图中再次截取我们需要的区域</span></span><br><span class="line">frame = i.crop(rangle)</span><br><span class="line">frame.save(<span class="string">&#x27;code.png&#x27;</span>)</span><br></pre></td></tr></table></figure></li>
-<li><p>最终效果如下，可以看到已经可以正确获取到图片验证码了</p>
-<p>  <img src="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/image-20210724181823219.png" alt="image-20210724181823219"></p>
-</li>
-</ul>
-<h2 id="gif动态验证码优化"><a href="#gif动态验证码优化" class="headerlink" title="gif动态验证码优化"></a>gif动态验证码优化</h2><ul>
-<li><p>上面的方案比较适合获取静态图片的验证码，但有种验证码是gif动态图的，上面方案也可以凑合用，代码里测试的网址就是gif的，能成功获取到验证码图片是因为这种gif验证码一般会在真实验证码停留较长时间，所以有比较大概率截图到真实验证码，脸黑的情况下则截取到假验证码，那有没有办法100%获取到真实验证码图片呢？</p>
-</li>
-<li><p>这里保存了两张网页的gif验证码进行简单分析，直接用mac os下自带的发现预览app查看发现，gif一共10张图片组成，真实验证码出现位置随机</p>
-<p>  <img src="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/misc.gif" alt="misc"></p>
-<p>  <img src="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/misc2.gif" alt="misc2"></p>
-</li>
-<li><p>这里给出一个获取真实验证码图片可行的方案：正如上面所说这种gif动态验证码会在真实验证码停留时间比较长，非真实的图片会快速跳过，所以我们可以在网页加载完后每隔1秒截一下图，截5张图，这样5张图出现相同的图片一定是真实验证码</p>
-</li>
-<li><p>修改后的代码实现</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">from</span> selenium <span class="keyword">import</span> webdriver</span><br><span class="line"><span class="keyword">from</span> selenium.common.exceptions <span class="keyword">import</span> TimeoutException</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.common.by <span class="keyword">import</span> By</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.support <span class="keyword">import</span> expected_conditions <span class="keyword">as</span> EC</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.support.wait <span class="keyword">import</span> WebDriverWait</span><br><span class="line"><span class="keyword">from</span> selenium.webdriver.chrome.options <span class="keyword">import</span> Options</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">options = Options()</span><br><span class="line"><span class="comment"># 网上说selenium截长图需要使用无图形界面模式</span></span><br><span class="line">options.add_argument(<span class="string">&#x27;headless&#x27;</span>)</span><br><span class="line">browser = webdriver.Chrome(options=options)</span><br><span class="line">wait = WebDriverWait(browser, <span class="number">5</span>)</span><br><span class="line">login_url = <span class="string">&quot;https://www.91wii.com/member.php?mod=logging&amp;action=login&quot;</span></span><br><span class="line">browser.get(login_url)</span><br><span class="line"><span class="comment"># 用js获取页面的宽高</span></span><br><span class="line">width = browser.execute_script(<span class="string">&quot;return document.documentElement.scrollWidth&quot;</span>)</span><br><span class="line">height = browser.execute_script(<span class="string">&quot;return document.documentElement.scrollHeight&quot;</span>)</span><br><span class="line"><span class="comment"># 将浏览器的宽高设置成刚刚获取的宽高</span></span><br><span class="line">browser.set_window_size(width, height)</span><br><span class="line"><span class="comment"># 获取验证码所在的img标签</span></span><br><span class="line">img = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, <span class="string">&#x27;img[src*=&quot;seccode&quot;]&#x27;</span>)))</span><br><span class="line"><span class="comment"># 等待网页加载完毕</span></span><br><span class="line">time.sleep(<span class="number">3</span>)</span><br><span class="line"><span class="comment"># 每隔5秒截一张图并保存</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">    browser.save_screenshot(<span class="string">f&#x27;temp/<span class="subst">&#123;i&#125;</span>.png&#x27;</span>)</span><br><span class="line">    time.sleep(<span class="number">1</span>)</span><br><span class="line"><span class="comment"># 获取html标签</span></span><br><span class="line">html = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, <span class="string">&#x27;html&#x27;</span>)))</span><br><span class="line"><span class="comment"># location定位验证码的坐标</span></span><br><span class="line">location=img.location</span><br><span class="line"><span class="comment"># 获取验证码的长宽</span></span><br><span class="line">size = img.size  </span><br><span class="line"><span class="comment"># 打开一张截图用于计算缩放比例</span></span><br><span class="line">i = Image.<span class="built_in">open</span>(<span class="string">&quot;temp/0.png&quot;</span>)  </span><br><span class="line"><span class="comment"># 计算缩放比例</span></span><br><span class="line">w=i.size[<span class="number">0</span>]/html.size[<span class="string">&#x27;width&#x27;</span>]</span><br><span class="line">h=i.size[<span class="number">1</span>]/html.size[<span class="string">&#x27;height&#x27;</span>]</span><br><span class="line"><span class="comment"># 计算验证码在截图中的位置</span></span><br><span class="line">rangle = (<span class="built_in">int</span>(location[<span class="string">&#x27;x&#x27;</span>])*w, <span class="built_in">int</span>(location[<span class="string">&#x27;y&#x27;</span>])*h, <span class="built_in">int</span>(location[<span class="string">&#x27;x&#x27;</span>] + size[<span class="string">&#x27;width&#x27;</span>])*w, <span class="built_in">int</span>(location[<span class="string">&#x27;y&#x27;</span>] + size[<span class="string">&#x27;height&#x27;</span>])*h)</span><br><span class="line"><span class="comment"># 使用Image的crop函数，从截图中再次截取我们需要的区域</span></span><br><span class="line">ls=[]</span><br><span class="line">real_img=<span class="literal">None</span></span><br><span class="line"><span class="comment"># 从5张网页截图里面截取验证码图片</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">    t = Image.<span class="built_in">open</span>(<span class="string">f&quot;temp/<span class="subst">&#123;i&#125;</span>.png&quot;</span>)</span><br><span class="line">    ls.append(t.crop(rangle))</span><br><span class="line"><span class="comment"># 两两比较从5张图片里截取到的验证码图片，一旦出现相等情况则说明找到了真实验证码图片</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,<span class="number">5</span>):</span><br><span class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(i+<span class="number">1</span>, <span class="number">5</span>):</span><br><span class="line">        <span class="keyword">if</span> ls[i] == ls[j]:</span><br><span class="line">            real_img=ls[i]</span><br><span class="line">            real_img.save(<span class="string">&quot;temp/real.png&quot;</span>)</span><br><span class="line">            exit()</span><br></pre></td></tr></table></figure></li>
-<li><p>最后可以100%获取到gif图里面的真实验证码图片</p>
-<p>  <img src="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/image-20210724232000267.png" alt="image-20210724232000267"></p>
-</li>
-</ul>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/lvchengda/p/12626949.html">selenium获取图片验证码</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/llf_cloud/article/details/84310644">selenium使用location定位元素坐标偏差</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/ddd98dy/p/13586055.html">selenium使用location定位元素坐标偏差</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/hanfe1/p/13131583.html">Python selenium操作浏览器全屏截图</a></p>
-</li>
-</ul>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -329,7 +299,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-07-24 17:46:57" itemprop="dateModified" datetime="2021-07-24T17:46:57+08:00">2021-07-24</time>
+                <time title="修改时间：2021-07-24 23:39:27" itemprop="dateModified" datetime="2021-07-24T23:39:27+08:00">2021-07-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -363,130 +333,14 @@
 </blockquote>
 </li>
 </ul>
-<h3 id="准备阶段"><a href="#准备阶段" class="headerlink" title="准备阶段"></a>准备阶段</h3><ul>
-<li><p>一台运行内存至少1G的机器（一开始在512M机器上搭建，一直启动失败，排错很久才发现是内存不够，刚好1G的机器，内存也吃紧，需要有swap分区，这里搭建环境是1G 内存+1G swap交换空间）</p>
-</li>
-<li><p>下载奇文网盘项目的release里的源码，直接clone下来的代码缺一些文件</p>
-<blockquote>
-<p><a target="_blank" rel="noopener" href="https://gitee.com/qiwen-cloud/qiwen-file/releases/">后端release源码</a></p>
-<p><a target="_blank" rel="noopener" href="https://gitee.com/qiwen-cloud/qiwen-file-web/releases/">前端release源码</a></p>
-</blockquote>
-</li>
-<li><p>编译环境</p>
-<ul>
-<li><p>JDK （这里为JDK8）</p>
-</li>
-<li><p>maven环境 （这里为3.8.1）</p>
-</li>
-<li><p>idea （非必须）</p>
-</li>
-<li><p>nodejs （这里14.17.0）</p>
-</li>
-</ul>
-</li>
-<li><p>官方教程中提到的环境</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111415582.png" alt="image-20210716111415582"></p>
-</li>
-</ul>
-<h3 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h3><h4 id="编译后端"><a href="#编译后端" class="headerlink" title="编译后端"></a>编译后端</h4><ul>
-<li><p>用idea打开后端项目qiwen-file，可以看到项目结构如下，如果是git clone下来的代码，则没有file-common这个文件夹，也就无法按他官方的方法编译出release文件夹，所以需要下载release的源码包</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104349853.png" alt="image-20210716104349853"></p>
-</li>
-<li><p>打开file-web/src/main/resources/config，可以看到有3个SpringBoot的配置文件，从上到下，第一个为公共配置内容，第二个为开发环境配置内容，第三个即为生产环境配置内容</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104555673.png" alt="image-20210716104555673"></p>
-</li>
-<li><p>修改application.properties，加入一行server.address=localhost，之所以加这个是，如果不加这个，则SpringBoot的默认tomcat配置会监听0.0.0.0即所有ip的请求，因为后面用的是nginx进行转发，所以没有必要暴露接口到公网；修改spring.profiles.active值为prod即选择生产环境；端口看需求，自行选择是否更改，这里维持默认值。</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104830244.png" alt="image-20210716104830244"></p>
-</li>
-<li><p>打开application-prod.properties，修改里面的mysql连接信息，修改里面的mysql服务的ip，端口，用户名和密码，这里默认连接的是file数据库，可以修改为其他，但这里保持默认即可</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716105359.png" alt="image-20210716105359.png"></p>
-</li>
-<li><p>上面properties配置修改完后，打开file-common/src/main/resource/conf/settings.xml，修改localRepository的值为你的maven本地仓库路径，这步很重要</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716110048.png" alt="image-20210716110048.png"></p>
-</li>
-<li><p>编译生成release文件夹，打开终端在项目根路径下运行以下命令</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean install -s file-common/src/main/resources/conf/settings.xml</span><br></pre></td></tr></table></figure></li>
-<li><p>等待编译完成，不出意外即可看到生成了release文件夹，目录结构如下</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716110615353.png" alt="image-20210716110615353"></p>
-</li>
-<li><p>至此后端编译完成</p>
-</li>
-</ul>
-<h4 id="前端编译"><a href="#前端编译" class="headerlink" title="前端编译"></a>前端编译</h4><ul>
-<li><p>前端编译比较简单，在前端项目qiwen-file-web根路径运行以下命令，运行时如果提示需要&quot;npm audit fix&quot;，则按提示运行一遍<code>npm audit fix</code>即可</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">npm install</span><br><span class="line"></span><br><span class="line">npm run build</span><br></pre></td></tr></table></figure></li>
-<li><p>编译完成后会生成一个dist文件夹</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111828276.png" alt="image-20210716111828276"></p>
-</li>
-</ul>
-<h3 id="服务器部署-以ubuntu-20-04为例"><a href="#服务器部署-以ubuntu-20-04为例" class="headerlink" title="服务器部署(以ubuntu 20.04为例)"></a>服务器部署(以ubuntu 20.04为例)</h3><ul>
-<li><p>安装一些常用命令</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update &amp;&amp; sudo apt install git nginx curl wget unzip net-tools vim -y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用nginx开机自启动</span></span><br><span class="line">sudo systemctl <span class="built_in">enable</span> nginx</span><br></pre></td></tr></table></figure></li>
-<li><p>安装docker（非必须，这里使用docker，可以直接用docker拉取mysql和redis环境，省去配置的时间，mysql和redis都可以用apt安装配置）</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -sSL https://get.daocloud.io/docker | sh</span><br></pre></td></tr></table></figure></li>
-<li><p>docker 拉取mysql镜像并启动</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里密码需要根application-prod.properties里面的一致，127.0.0.1:3306:3306将本地3306转发至容器</span></span><br><span class="line"><span class="comment"># 不加127.0.0.1则外网也可访问数据库，不安全</span></span><br><span class="line">docker run -itd  --restart unless-stopped --name mysql -p 127.0.0.1:3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql</span><br></pre></td></tr></table></figure></li>
-<li><p>docker拉取redis镜像并启动</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 同样只监听本地127.0.0.1即可，这里不设置密码，如果需要设置密码，则application.properties里相应的地方需要修改</span></span><br><span class="line">docker run --restart unless-stopped -p 127.0.0.1:6379:6379 --name redis -d redis redis-server --appendonly yes</span><br></pre></td></tr></table></figure></li>
-<li><p>安装mysql-client，连接mysql数据库，创建一个file数据库</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install mysql-client -y</span><br><span class="line"></span><br><span class="line">mysql -h 127.0.0.1 -u root -p</span><br></pre></td></tr></table></figure></li>
-<li><p>mysql命令界面创建数据库，注意如果在application-prod.properties里面修改了默认连接的数据库的名称，则这里也要将file修改为相应的数据库名，否则如果数据库不存在，则启动会报错</p>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create database file default character set utf8mb4 collate utf8mb4_general_ci;</span><br></pre></td></tr></table></figure></li>
-<li><p>创建好file数据库就可以退出mysql连接了</p>
-</li>
-<li><p>配置nginx，在/etc/nginx/conf.d/目录下新建一个.conf扩展名的文件，名字随意</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/nginx/conf.d/pan.conf</span><br></pre></td></tr></table></figure></li>
-<li><p>加入以下内容</p>
-  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">server</span><br><span class="line">&#123;</span><br><span class="line">        listen 80<span class="comment">;</span></span><br><span class="line">        server_name pan.iz4.cc<span class="comment">;</span></span><br><span class="line">        index index.html index.htm index.php default.php default.htm default.html<span class="comment">;</span></span><br><span class="line">        root /www/web<span class="comment">;</span></span><br><span class="line">                </span><br><span class="line">        location /api/&#123;</span><br><span class="line">                proxy_set_header Host $http_host<span class="comment">;</span></span><br><span class="line">                proxy_set_header X-Real-IP $remote_addr<span class="comment">;</span></span><br><span class="line">                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for<span class="comment">;</span></span><br><span class="line">                proxy_set_header X-Forwarded-Proto $scheme<span class="comment">;</span></span><br><span class="line">                proxy_pass      http://localhost:8080/<span class="comment">;</span></span><br><span class="line">        &#125;</span><br><span class="line">                </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>保存后重启nginx，使之生效</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service nginx restart</span><br></pre></td></tr></table></figure></li>
-<li><p>安装jdk</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install openjdk-8-jdk -y</span><br></pre></td></tr></table></figure></li>
-<li><p>配置环境变量JAVA_HOME和CLASSPATH</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.bashrc</span><br></pre></td></tr></table></figure></li>
-<li><p>最后面加入以下内容</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 <span class="comment"># 替换为你的jdk安装目录</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$JAVA_HOME</span>/bin:<span class="variable">$PATH</span></span><br><span class="line"><span class="built_in">export</span> CLASSPATH=.:<span class="variable">$JAVA_HOME</span>/lib/dt.jar:<span class="variable">$JAVA_HOME</span>/lib/tools.jar</span><br></pre></td></tr></table></figure></li>
-<li><p>保存并运行<code>source ~/.bashrc</code>使之生效</p>
-</li>
-<li><p>将后端编译生成的release和dist文件夹打包上传至服务器</p>
-</li>
-<li><p>将dist文件夹的内容拷贝到/www/web目录下（这里需要跟上面nginx配置里的root /www/web路径保持一致）前端部署完后，浏览器访问服务器域名会出现以下界面，但因为后端还没部署，api接口不生效，所以点击注册/登录会没有反应，开发者工具里面可以看到有xhr请求失败，接下来启动后端让前后端联动</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717095004070.png" alt="image-20210717095004070"></p>
-</li>
-<li><p>因为奇文网盘上传文件默认保存路径为release/static/，因此需要release文件夹拷至服务器需要存放数据的硬盘的目录下，否则可能会占用系统硬盘空间，如果服务器只有一块硬盘则任意目录都可</p>
-</li>
-<li><p>运行release/bin/start.sh</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash start.sh</span><br></pre></td></tr></table></figure></li>
-<li><p>启动后，等待启动完成，运行以下命令，查看是否出现tcp 8080端口，若出现则后端正常启动了，如果没有，首先检查机器的内存是否足够，然后再检查配置是否有误</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -tnl </span><br></pre></td></tr></table></figure>
-
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100000335.png" alt="image-20210717100000335"></p>
-</li>
-<li><p>关闭服务</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash stop.sh</span><br></pre></td></tr></table></figure></li>
-<li><p>后端启动完成后，浏览器访问服务器域名或IP，可以发现首页内容更丰富了，而且可以点击注册会登录可以正常跳转页面，说明前后端都部署正常</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100303482.png" alt="image-20210717100303482"></p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100440345.png" alt="image-20210717100440345"></p>
-</li>
-<li><p>如果后续需要修改properties配置，可以修改release/conf/config目录下的properties文件，而不用重新编译</p>
-</li>
-<li><p>实际使用中，上传文件可能还回出现以下保错 &quot;413 Request Entity Too Large&quot;，这是nginx里面没有配置最大上传文件大小导致的，解决方法，编辑/etc/nginx/nginx.conf文件<code>vi /etc/nginx/nginx.conf</code>，找到http部分，在&quot;{}&quot;里面加入以下两句</p>
-<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100939284.png" alt="image-20210717100939284"></p>
-  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 根据需求自行修改大小</span></span><br><span class="line"><span class="comment"># 上传文件最大大小</span></span><br><span class="line">client_max_body_size 10240M<span class="comment">;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># nginx分配给请求数据的Buffer大小，如果请求的数据小于client_body_buffer_size直接将数据先在内存中存储。如果请求的值大于client_body_buffer_size小于client_max_body_size，就会将数据先存储到临时文件中</span></span><br><span class="line">client_body_buffer_size 8M<span class="comment">;</span></span><br></pre></td></tr></table></figure></li>
-<li><p>修改完，运行<code>sudo service nginx restart</code>，重启nginx使之生效</p>
-</li>
-<li><p>奇文网盘里面也有设置最大上传文件大小的地方，默认为2048M，跟nginx的上传设置是互相独立的，如果在nginx里设置最大文件为10G，奇文网盘配置文件里设置为2G那么，最大上传还是只有2G，所以要两边同时修改</p>
-</li>
-<li><p>修改release/conf/config/application.properties，<code>vi release/conf/config/application.properties </code>，找到以下三个配置，将大小修改为你所需的大小即可</p>
-  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring.servlet.multipart.max-file-size</span>=<span class="number">10240</span>MB</span><br><span class="line"><span class="attr">spring.servlet.multipart.max-request-size</span>=<span class="number">10240</span>MB</span><br><span class="line"><span class="attr">spring.servlet.multipart.enabled</span>=<span class="literal">true</span></span><br></pre></td></tr></table></figure></li>
-<li><p>修改完运行release/bin/restart.sh，重启即可<code>bash release/bin/restart.sh</code></p>
-</li>
-<li><p>这样就可以上传大文件了</p>
-</li>
-<li><p>至此成功在服务器上搭建了奇文网盘</p>
-</li>
-</ul>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -528,10 +382,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2021-07-15 15:59:12 / 修改时间：16:55:29" itemprop="dateCreated datePublished" datetime="2021-07-15T15:59:12+08:00">2021-07-15</time>
+              <time title="创建时间：2021-07-15 15:59:12" itemprop="dateCreated datePublished" datetime="2021-07-15T15:59:12+08:00">2021-07-15</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-07-24 23:40:16" itemprop="dateModified" datetime="2021-07-24T23:40:16+08:00">2021-07-24</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -554,36 +414,14 @@
 
       
           <h3 id="Swagger官网"><a href="#Swagger官网" class="headerlink" title="Swagger官网"></a><a target="_blank" rel="noopener" href="https://swagger.io/">Swagger官网</a></h3><h3 id="maven依赖"><a href="#maven依赖" class="headerlink" title="maven依赖"></a>maven依赖</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>io.springfox<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>springfox-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h3><ul>
-<li><p>Idea新建一个空的SpringBootWeb项目</p>
-<p>  <img src="/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/image-20210715160626842.png" alt="image-20210715160626842"></p>
-</li>
-<li><p>pom.xml中加入上述maven依赖，等待idea加载</p>
-</li>
-<li><p>一般springboot的&quot;boot-starter&quot;的jar包，都带有自动配置，所以先查看springfox-boot-starter提供的自动配置都有哪些</p>
-<p>  <img src="/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/image-20210715161039496.png" alt="image-20210715161039496"></p>
-</li>
-<li><p>可以看到就只有几个配置类，用到的配置并不多，这里有两个比较有用的配置</p>
-  <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">springfox:</span></span><br><span class="line">  <span class="attr">documentation:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span> <span class="comment"># swagger全局开关，false则关闭，缺省为true</span></span><br><span class="line">    <span class="attr">swagger-ui:</span></span><br><span class="line">    <span class="comment"># 这个相当于url的前缀，例如这里加了/api后访问swagger-ui的url变为: http://localhost:8080/api/swagger-ui/</span></span><br><span class="line">      <span class="attr">base-url:</span> <span class="string">&quot;/api&quot;</span> </span><br></pre></td></tr></table></figure></li>
-<li><p>编写一个HellController</p>
-  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> cc.iz4.swaggerdemo.controller;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.GetMapping;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.RestController;</span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@GetMapping(value = &quot;/hello&quot;)</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">hello</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;hello&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
-<li><p>启动并打开：<a target="_blank" rel="noopener" href="http://localhost:8080/api/swagger-ui/">http://localhost:8080/api/swagger-ui/</a></p>
-<p>  <img src="/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/image-20210715162043420.png" alt="image-20210715162043420"></p>
-</li>
-<li><p>可以看到，默认生成了这么一个界面，如果只是为了方便简单测试接口，那么这样就可以开始使用了，但是如果要修改这里页面中的文档的标题、描述信息这些那就需要自定义个Config类来实现</p>
-</li>
-</ul>
-<h3 id="自定义配置"><a href="#自定义配置" class="headerlink" title="自定义配置"></a>自定义配置</h3><ul>
-<li><p>编写一个Configuration类</p>
-  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> cc.iz4.swaggerdemo.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Autowired;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Value;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Bean;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Configuration;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.builders.ApiInfoBuilder;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.builders.PathSelectors;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.builders.RequestHandlerSelectors;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.service.ApiInfo;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.service.Contact;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.spi.DocumentationType;</span><br><span class="line"><span class="keyword">import</span> springfox.documentation.spring.web.plugins.Docket;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SwaggerConfig</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Bean</span></span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="function">Docket <span class="title">docket</span><span class="params">(ApiInfo apiInfo)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// new Docket(), 接收一个DocumentationType, 提供的选择 SWAGGER_12, SWAGGER_2, OAS_30</span></span><br><span class="line">        <span class="comment">// SWAGGER_12, SWAGGER_2, OAS_30 分别对应 Swagger的1.2, 2.0, 3.0版本</span></span><br><span class="line">        <span class="comment">// enable() true 则这个docket可以在浏览器中显示, Swagger可以有多个docket</span></span><br><span class="line">        <span class="comment">// apiInfo 文档标题, 文档描述, 以及作者信息, 开源信息等</span></span><br><span class="line">        <span class="comment">// groupName 设置组名，可在浏览器右上角的&quot;Select a definition&quot;选择不同的组</span></span><br><span class="line">        <span class="comment">// .select(), .apis(), .paths(), .build()是一组比较固定的写法</span></span><br><span class="line">        <span class="comment">// apis和paths需要配合相应的Selectors来使用</span></span><br><span class="line">        <span class="comment">// 例如这里 RequestHandlerSelectors.basePackage()是扫描包, 还有any(), none()等方法可选</span></span><br><span class="line">        <span class="comment">// PathSelectors提供字符串匹配的方法regx(), ant(), any(), none(), regx正则匹配, ant模式匹配</span></span><br><span class="line">        <span class="comment">// 所谓模式匹配：如/hello* 匹配所有以/hello为前缀的path url</span></span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Docket(DocumentationType.OAS_30).enable(<span class="keyword">true</span>).apiInfo(apiInfo)</span><br><span class="line">				.groupName(<span class="string">&quot;group1&quot;</span>)</span><br><span class="line">				.select()</span><br><span class="line">				.apis(RequestHandlerSelectors.basePackage(<span class="string">&quot;cc.iz4.swaggerdemo.controller&quot;</span>))</span><br><span class="line">				.paths(PathSelectors.ant(<span class="string">&quot;/hello*&quot;</span>))</span><br><span class="line">				.build();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Bean</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> ApiInfo <span class="title">apiInfo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">//设置文档标题等信息</span></span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> ApiInfoBuilder()</span><br><span class="line">				.title(<span class="string">&quot;文档标题&quot;</span>)</span><br><span class="line">				.description(<span class="string">&quot;文档描述&quot;</span>)</span><br><span class="line">				.contact(<span class="keyword">new</span> Contact(<span class="string">&quot;cc&quot;</span>, <span class="string">&quot;https://blog.iz4.cc&quot;</span>, <span class="string">&quot;cc@iz4.cc&quot;</span>))</span><br><span class="line">				.version(<span class="string">&quot;v1.0&quot;</span>)</span><br><span class="line">				.build();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
-<li><p>重启Application，可以看到修改的地方的内容生效了</p>
-<p>  <img src="/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/1.png" alt="1.png"></p>
-</li>
-<li><p>至此可以开始使用swagger来简单测试各个接口</p>
-</li>
-</ul>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -625,10 +463,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2021-07-09 14:59:35 / 修改时间：16:02:20" itemprop="dateCreated datePublished" datetime="2021-07-09T14:59:35+08:00">2021-07-09</time>
+              <time title="创建时间：2021-07-09 14:59:35" itemprop="dateCreated datePublished" datetime="2021-07-09T14:59:35+08:00">2021-07-09</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-07-24 23:40:05" itemprop="dateModified" datetime="2021-07-24T23:40:05+08:00">2021-07-24</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -651,31 +495,16 @@
 
       
           <ul>
-<li><p>问题：switch有个奇葩设定，就是连接的wifi必须能访问互联网，不然不给连，自动断开。但有时候需要就是需要在局域网中使用，有没有办法可以绕过这个校验？</p>
-</li>
-<li><p>原理：switch连接wifi时，会GET请求<a target="_blank" rel="noopener" href="http://ctest.cdn.n.nintendoswitch.cn/">http://ctest.cdn.n.nintendoswitch.cn</a>(国行)，该网页很简单，当User-Agent为&quot;NX NIFM/00&quot;时，返回文本&quot;ok&quot;，浏览器直接访问显示禁止访问，这是因为服务端进行了&quot;User-Agent&quot;验证，只有<code>&quot;User-Agent&quot;: &quot;NX NIFM/00&quot;</code>才能得到返回结果，并且响应头中带有<code>&#39;X-Organization&#39;: &#39;Nintendo&#39;</code>用于switch客户端校验。因此破解switch的wifi连接验证，就可以采用dns劫持ctest.cdn.n.nintendoswitch.cn这个域名到指定的服务器，访问时该服务器直接返回伪装的页面&quot;ok&quot;以及<code>&#39;X-Organization&#39;: &#39;Nintendo&#39;</code>即可</p>
-<p>  <img src="/tutorial/2021/07/OpenWrt%E7%A0%B4%E8%A7%A3switch%E7%9A%84wifi%E8%81%94%E7%BD%91%E9%AA%8C%E8%AF%81/fig1.png" alt="访问ctest.cdn.n.nintendoswitch.cn的请求信息"></p>
-</li>
-<li><p>采用dns劫持方式，需要占用服务端的80端口，但是80端口用于只返回这个简单的页面就有点浪费，因此采用nginx反向代理的方式，来实现端口复用，而且这个简单页面完全可以直接用nginx配置文件来实现。</p>
-</li>
-<li><p>如果OpenWrt装有nginx，可以在/etc/nginx/conf.d/目录下新建一个.conf配置文件，加入一下内容，然后运行<code>/etc/init.d/nginx restart</code>重启即可，这里server_name有3个(ctest.cdn.nintendo.net conntest.nintendowifi.net ctest.cdn.n.nintendoswitch.cn)是因为，非国行switch的验证域名是另外两个</p>
-  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">server_names_hash_bucket_size  64<span class="comment">;</span></span><br><span class="line">server &#123;</span><br><span class="line">	listen 80<span class="comment">;</span></span><br><span class="line">	listen <span class="section">[::]</span>:80<span class="comment">;</span></span><br><span class="line"></span><br><span class="line">	server_name ctest.cdn.nintendo.net conntest.nintendowifi.net ctest.cdn.n.nintendoswitch.cn<span class="comment">;</span></span><br><span class="line">        location / &#123;</span><br><span class="line">		more_clear_headers &#x27;Server&#x27;<span class="comment">;</span></span><br><span class="line">                add_header X-Organization Nintendo<span class="comment">;</span></span><br><span class="line">                add_header Pragma no-cache<span class="comment">;</span></span><br><span class="line">                expires 0s<span class="comment">;</span></span><br><span class="line"></span><br><span class="line">                default_type text/plain<span class="comment">;</span></span><br><span class="line">                return 200 &quot;ok&quot;<span class="comment">;</span></span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>如果OpenWrt上没有装nginx或者不想在OpenWrt上安装nginx，可以在vps或者局域网内其他机器上的nginx配置加入上述配置即可。</p>
-</li>
-<li><p>配置好nginx后，需要进行dns劫持，这个可以直接修改hosts文件来实现，这里选择修改OpenWRt的dhcp配置文件来实现，ssh连接到OpenWrt，将下面配置文件中的&quot;你的nginx服务器ip&quot;替换为搭建了伪装页面的服务器ip即可，例如在OpenWrt上搭建的，且路由后台为192.168.2.1，则填192.168.2.1即可，在vps上搭建的则填vps的公网ip，在局域网其他机器上搭建的则填该机器的局域网ip地址即可，修改完后，复制粘贴，回车运行即可。最后运行<code>/etc/init.d/dnsmasq reload</code>即可生效，这里还有其他规则，作用是屏蔽了所有任天堂服务器的连接，如果不需要可以自行删除。</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">uci batch &lt;&lt;<span class="string">&#x27;EOF&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.com/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.net/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.jp/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.co.jp/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.co.uk/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo-europe.com/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendowifi.net/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/conntest.nintendowifi.net/你的nginx服务器ip&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/ctest.cdn.n.nintendoswitch.cn/你的nginx服务器ip&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/ctest.cdn.nintendo.net/你的nginx服务器ip&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.es/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.co.kr/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.tw/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.com.hk/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.com.au/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.co.nz/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.at/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.be/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendods.cz/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.dk/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.de/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.fi/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.fr/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.gr/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.hu/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.it/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.nl/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.no/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.pt/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.ru/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.co.za/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.se/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.ch/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendo.pl/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendoswitch.com/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendoswitch.com.cn/0.0.0.0&#x27;</span></span><br><span class="line">add_list dhcp.@dnsmasq[-1].address=<span class="string">&#x27;/.nintendoswitch.cn/0.0.0.0&#x27;</span></span><br><span class="line">commit dhcp</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure></li>
-<li><p>验证是否生效，可以运行<code>ctest.cdn.n.nintendoswitch.cn</code>，如果解析到的ip变为上面所设置的，则dns劫持成功</p>
-<p>  <img src="/tutorial/2021/07/OpenWrt%E7%A0%B4%E8%A7%A3switch%E7%9A%84wifi%E8%81%94%E7%BD%91%E9%AA%8C%E8%AF%81/fig2.png"></p>
-</li>
-<li><p>运行<code>curl ctest.cdn.n.nintendoswitch.cn</code>，如果正常返回&quot;ok&quot;，则说明dns劫持成功，并且成功从伪装的服务器请求到了页面，因为直接不指定User-Agent的情况下curl该域名是不能得到&quot;ok&quot;的，真实服务器有简单的&quot;User-Agent&quot;验证，我们伪造的没有这个验证，只要GET请求就返回&quot;ok&quot;，下图就是正常返回了&quot;ok&quot;但是因为没有换行符导致跟命令合在一块了</p>
-<p>  <img src="/tutorial/2021/07/OpenWrt%E7%A0%B4%E8%A7%A3switch%E7%9A%84wifi%E8%81%94%E7%BD%91%E9%AA%8C%E8%AF%81/fig3.png"></p>
-</li>
-<li><p>至此，switch只要wifi连接到路由器就能保持连接状态，而不需要路由器能访问互联网</p>
-</li>
-<li><p>参考链接: <a target="_blank" rel="noopener" href="https://gitlab.com/a/90dns">90dns</a></p>
-</li>
+<li>问题：switch有个奇葩设定，就是连接的wifi必须能访问互联网，不然不给连，自动断开。但有时候需要就是需要在局域网中使用，有没有办法可以绕过这个校验？</li>
 </ul>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/tutorial/2021/07/OpenWrt%E7%A0%B4%E8%A7%A3switch%E7%9A%84wifi%E8%81%94%E7%BD%91%E9%AA%8C%E8%AF%81/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -725,7 +554,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-07-09 16:02:40" itemprop="dateModified" datetime="2021-07-09T16:02:40+08:00">2021-07-09</time>
+                <time title="修改时间：2021-07-24 23:39:52" itemprop="dateModified" datetime="2021-07-24T23:39:52+08:00">2021-07-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -752,28 +581,15 @@
 <li><p>新建一个maven项目</p>
 <p>  <img src="/note/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/image-20210608155831815.png" alt="image-20210608155831815"></p>
 </li>
-<li><p>填写GroupId和ArtifactId以及Version</p>
-<p>  <img src="/note/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/image-20210608155917744.png" alt="image-20210608155917744"></p>
-</li>
-<li><p>修改好项目模板后，在Terminal中执行<code> mvn archetype:create-from-project</code></p>
-</li>
-<li><p>再运行，以下命令安装骨架至本地maven仓库</p>
-  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd target/generated-sources/archetype</span><br><span class="line">mvn install</span><br></pre></td></tr></table></figure></li>
-<li><p>添加自定义archetype至idea，新建项目或者模块，选择Add Archetype...，输入GroupId、ArtifactId、Version，注意：默认生成的ArtifactId与项目的ArtifactId相比会添加后缀==-archetype==，即这里为==web-template-archetype====</p>
-<p>  <img src="/note/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/image-20210608160630418.png" alt="image-20210608160630418"></p>
-</li>
 </ul>
-<h2 id="删除archetype"><a href="#删除archetype" class="headerlink" title="删除archetype"></a>删除archetype</h2><ul>
-<li>idea中删除自定义archetype</li>
-<li>主要是要删除UserArchetypes.xml文件的内容。不同操作系统的位置不一样。<ul>
-<li>Mac系统<blockquote>
-<p>${home}/Library/Caches/JetBrains/.IntelliJIdea*/Maven/Indices/UserArchetypes.xml</p>
-</blockquote>
-</li>
-</ul>
-</li>
-</ul>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/note/2021/06/idea%E8%87%AA%E5%AE%9A%E4%B9%89archetype/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
