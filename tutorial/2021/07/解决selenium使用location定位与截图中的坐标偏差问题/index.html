@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://blog.iz4.cc/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/image-20210724181823219.png">
 <meta property="article:published_time" content="2021-07-24T09:41:21.000Z">
-<meta property="article:modified_time" content="2021-07-24T10:24:33.778Z">
+<meta property="article:modified_time" content="2021-07-24T10:28:39.696Z">
 <meta property="article:author" content="CC">
 <meta property="article:tag" content="教程">
 <meta property="article:tag" content="笔记">
@@ -225,7 +225,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2021-07-24 17:41:21 / 修改时间：18:24:33" itemprop="dateCreated datePublished" datetime="2021-07-24T17:41:21+08:00">2021-07-24</time>
+              <time title="创建时间：2021-07-24 17:41:21 / 修改时间：18:28:39" itemprop="dateCreated datePublished" datetime="2021-07-24T17:41:21+08:00">2021-07-24</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -257,7 +257,7 @@
       
         <h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><ul>
 <li>一开始想用selenium实现某网站的自动登录，这就不可避免的遇到验证码识别问题，要识别验证码那肯定得先获得验证，网上给的获取验证码图片的方法是，先利用WebDriver的save_screenshot函数对网页进行截图，然后再获得验证的图片大小并用location来定位获得验证码的坐标，最后从截图中截取出验证码来</li>
-<li>实际试的过程发现，还是有坑在里面，就是location定位的坐标跟截图里的对应不上，网上找了下发现说是：<code>之所以会出现这个坐标偏差是因为windows系统下电脑设置的显示缩放比例造成的，location获取的坐标是按显示100%时得到的坐标，而截图所使用的坐标却是需要根据显示缩放比例缩放后对应的图片所确定的，因此就出现了偏差。 解决这个问题有三种方法：1.修改电脑显示设置为100%。这是最简单的方法；2.缩放截取到的页面图片，即将截图的size缩放为宽和高都除以缩放比例后的大小；3.修改Image.crop的参数，将参数元组的四个值都乘以缩放比例。</code>，但网上给的结局方案不是很好，因为需要写死缩放比例，我测试用的是mac os，测试好后打算放树莓派上跑，总不能改比例改来改去，有没有办法可以自动计算比例？</li>
+<li>实际试的过程发现，还是有坑在里面，就是location定位的坐标跟截图里的对应不上，网上找了下相关文章，发现这个：<code>之所以会出现这个坐标偏差是因为windows系统下电脑设置的显示缩放比例造成的，location获取的坐标是按显示100%时得到的坐标，而截图所使用的坐标却是需要根据显示缩放比例缩放后对应的图片所确定的，因此就出现了偏差。 解决这个问题有三种方法：1.修改电脑显示设置为100%。这是最简单的方法；2.缩放截取到的页面图片，即将截图的size缩放为宽和高都除以缩放比例后的大小；3.修改Image.crop的参数，将参数元组的四个值都乘以缩放比例。</code>，但网上给的解决方案不是很好，因为需要写死缩放比例并且是windows下的情况，而我测试用的是mac os，测试好后打算放树莓派上跑，总不能改比例改来改去，有没有办法可以自动计算缩放比例？</li>
 </ul>
 <h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ul>
 <li>这里想到了一个自动计算缩放比例方法，思路很简单，就是先利用selenium获取根标签&quot;html&quot;的size，再获取截图的size，两者长宽分别相比就出来了</li>
