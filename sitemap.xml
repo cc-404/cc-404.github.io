@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://blog.iz4.cc/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/</loc>
+    
+    <lastmod>2021-07-24</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/</loc>
     
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     
   </url>
   
@@ -53,7 +60,7 @@
 
   <url>
     <loc>http://blog.iz4.cc/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -61,49 +68,63 @@
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E6%95%99%E7%A8%8B/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E6%9D%82%E9%A1%B9/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/Java/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/Spring/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/SpringBoot/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E7%AC%94%E8%AE%B0/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>http://blog.iz4.cc/tags/%E6%95%99%E7%A8%8B%EF%BC%8C%E7%AC%94%E8%AE%B0/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <loc>http://blog.iz4.cc/tags/%E9%AA%8C%E8%AF%81%E7%A0%81/</loc>
+    <lastmod>2021-07-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.iz4.cc/tags/selenium/</loc>
+    <lastmod>2021-07-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.iz4.cc/tags/python/</loc>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -112,21 +133,21 @@
   
   <url>
     <loc>http://blog.iz4.cc/categories/tutorial/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/categories/article/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/categories/note/</loc>
-    <lastmod>2021-07-17</lastmod>
+    <lastmod>2021-07-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
