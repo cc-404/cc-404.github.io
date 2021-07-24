@@ -1,14 +1,5 @@
 User-agent: *
 
 Allow: /
-Allow: /tags/
-Allow: /tutorials/
-Allow: /categories/
-Allow: /categories/tutorials/
-
-Disallow: /notes/
-Disallow: /about/
-Disallow: /archives/
-Disallow: /categories/notes/
 
 Sitemap: https://blog.iz4.cc/search.xml
