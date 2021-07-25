@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>AOSP次级镜像搭建</title>
+      <link href="/tutorial/2021/07/AOSP%E6%AC%A1%E7%BA%A7%E9%95%9C%E5%83%8F%E6%90%AD%E5%BB%BA/"/>
+      <url>/tutorial/2021/07/AOSP%E6%AC%A1%E7%BA%A7%E9%95%9C%E5%83%8F%E6%90%AD%E5%BB%BA/</url>
+      
+        <content type="html"><![CDATA[<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><ul><li><p>以清华AOSP镜像为例搭建本地AOSP次级镜像</p></li><li><p><a href="https://mirrors.tuna.tsinghua.edu.cn/help/AOSP/">清华AOSP官网</a></p></li><li><p>安装repo</p>  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mkdir ~/bin</span><br><span class="line">PATH=~/bin:$PATH</span><br><span class="line"><span class="meta">#</span><span class="bash"> curl https://storage.googleapis.com/git-repo-downloads/repo &gt; ~/bin/repo</span></span><br><span class="line">curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo &gt; ~/bin/repo</span><br><span class="line">chmod a+x ~/bin/repo</span><br></pre></td></tr></table></figure></li><li><p>修改repo默认REPO_URL（默认为谷歌的）</p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi ~/bin/repo</span><br></pre></td></tr></table></figure></li><li><p>找到<strong>REPO_URL</strong>，将值替换为：<code>https://mirrors.tuna.tsinghua.edu.cn/git/git-repo</code></p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">REPO_URL = <span class="string">&#x27;https://mirrors.tuna.tsinghua.edu.cn/git/git-repo&#x27;</span></span><br></pre></td></tr></table></figure></li></ul><span id="more"></span><ul><li><p>建立工作目录</p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir aosp</span><br><span class="line"><span class="built_in">cd</span> aosp</span><br></pre></td></tr></table></figure></li><li><p>初始化仓库（建立次级镜像）</p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">repo init -u https://mirrors.tuna.tsinghua.edu.cn/git/AOSP/mirror/manifest --mirror</span><br></pre></td></tr></table></figure></li><li><p>同步源码</p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># repo sync -j4 # -j指定线程数</span></span><br><span class="line">repo sync</span><br></pre></td></tr></table></figure></li><li><p>同步完源码后运行</p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># AOSP_PATH替换为工作目录路径</span></span><br><span class="line">git daemon --verbose --export-all --base-path=AOSP_PATH</span><br></pre></td></tr></table></figure></li><li><p>现在可以使用 <code>git://ip.to.mirror/platform/manifest</code> 作为镜像源地址，将&quot;ip.to.mirror&quot;替换为本地镜像的ip地址或者host即可</p></li><li><p>从本地次级镜像同步AOSP源码示例</p>  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">repo init -u git://ip.to.mirror/platform/manifest -b android-4.0.1_r1 <span class="comment"># 选择android分支</span></span><br></pre></td></tr></table></figure></li><li><p>建立次级镜像后，同步LineageOS源码或者其他Android源码，也可以替换其中的AOSP源，这里以同步LineageOS cm-14为例，替换默认的aosp源为我们的本地源，修改default.xml文件<code>vi .repo/manifests/default.xml</code>，将remote  name=&quot;aosp&quot;的<code>https://android.googlesource.com</code>替换为<code>git://ip.to.mirror</code></p>  <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">remote</span>  <span class="attr">name</span>=<span class="string">&quot;aosp&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">fetch</span>=<span class="string">&quot;git://ip.to.mirror&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">revision</span>=<span class="string">&quot;refs/tags/android-7.1.2_r36&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> tutorial </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 笔记 </tag>
+            
+            <tag> android </tag>
+            
+            <tag> aosp </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>解决selenium使用location定位与截图中的坐标偏差问题</title>
       <link href="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/"/>
       <url>/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/</url>
@@ -80,11 +109,11 @@
       
         <tags>
             
-            <tag> Java </tag>
+            <tag> java </tag>
             
-            <tag> Spring </tag>
+            <tag> spring </tag>
             
-            <tag> SpringBoot </tag>
+            <tag> springboot </tag>
             
         </tags>
       
