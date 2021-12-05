@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/</loc>
+    
+    <lastmod>2021-12-05</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/</loc>
+    
+    <lastmod>2021-12-03</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/</loc>
     
     <lastmod>2021-12-02</lastmod>
@@ -144,7 +158,7 @@
 
   <url>
     <loc>http://blog.iz4.cc/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -152,84 +166,84 @@
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E7%AC%94%E8%AE%B0/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/android/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/aosp/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E6%95%99%E7%A8%8B/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E9%AA%8C%E8%AF%81%E7%A0%81/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/selenium/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/python/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E6%9D%82%E9%A1%B9/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/java/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/spring/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/springboot/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/tags/%E9%80%86%E5%90%91/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -238,21 +252,21 @@
   
   <url>
     <loc>http://blog.iz4.cc/categories/tutorial/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/categories/note/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://blog.iz4.cc/categories/article/</loc>
-    <lastmod>2021-12-02</lastmod>
+    <lastmod>2021-12-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
