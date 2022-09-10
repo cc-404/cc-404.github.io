@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
-<meta name="generator" content="Hexo 6.2.0">
+<meta name="generator" content="Hexo 6.3.0">
 <meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -38,7 +38,7 @@
 <meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171517220.png">
 <meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171742985.png">
 <meta property="article:published_time" content="2021-08-04T08:16:00.000Z">
-<meta property="article:modified_time" content="2022-08-20T01:12:31.187Z">
+<meta property="article:modified_time" content="2022-09-10T02:45:30.910Z">
 <meta property="article:author" content="CC">
 <meta property="article:tag" content="笔记">
 <meta property="article:tag" content="android">
@@ -242,7 +242,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-08-20 09:12:31" itemprop="dateModified" datetime="2022-08-20T09:12:31+08:00">2022-08-20</time>
+                <time title="修改时间：2022-09-10 10:45:30" itemprop="dateModified" datetime="2022-09-10T10:45:30+08:00">2022-09-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -276,7 +276,7 @@
 <li>最近尝试给谷歌nexus 5编译HavocOS （android 11分支），折腾一大堆后终于生成了zip刷机包，结果死活刷不进去，卡在&quot;E1001: Failed to update system image&quot;，原因推测是：system分区太小，因为编译时报错提示system镜像过小，所以在编译配置文件中BoardConfig.mk调整过system分区的大小，修改后才编译打包成功。</li>
 <li>显然只改BoardConfig.mk，只是能正常编译打包，但是手机（物理）上的system分区还是那么大，太大刷不进去</li>
 <li>为了验证是否试system分区太小缘故，因为编译还生成了system.img的中间文件，这个img是可以用fastboot刷入的，手机usb连接到电脑，进入bootloader模式，运行<code>fastboot system system.img</code>，不出意外失败了，而且报错信息为：&quot;remote: &#39;size too large&#39;&quot;，这就验证了是手机&#x2F;system分区不够大的原因。所以问题就变为了怎么扩增system分区？</li>
-<li>经过网上查找相关教程，最终按按这个问题里的答案：<a target="_blank" rel="noopener" href="https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition">https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition</a>尝试成功</li>
+<li>经过网上查找相关教程，最终按这个问题里的答案：<a target="_blank" rel="noopener" href="https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition">https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition</a>尝试成功</li>
 </ul>
 <h2 id="准备阶段"><a href="#准备阶段" class="headerlink" title="准备阶段"></a>准备阶段</h2><ul>
 <li>需要手机解锁bootloader并刷入twrp recovery</li>
@@ -448,7 +448,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-count">35</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -461,7 +461,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-count">22</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
