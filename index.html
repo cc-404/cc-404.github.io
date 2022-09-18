@@ -226,7 +226,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-09-18 11:20:38" itemprop="dateModified" datetime="2022-09-18T11:20:38+08:00">2022-09-18</time>
+                <time title="修改时间：2022-09-18 11:28:24" itemprop="dateModified" datetime="2022-09-18T11:28:24+08:00">2022-09-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -250,11 +250,24 @@
 
       
           <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
-<li>最近实际逆向过程中，经常会遇到AES算法，而且有时也会遇到一些非标准AES或者魔改的AES</li>
-<li>本着进一步了解AES算法的态度，决定结合网上各种资料，自己动手实现一次AES加解密，加深自己对AES的了解</li>
-<li>当然网上有很多优秀的AES实现了，其中最著名的当属：<a target="_blank" rel="noopener" href="https://github.com/openssl/openssl">openssl</a>，openssl包含非常多的密码学算法的实现，而且很多都是性能优化后的实现。一个比较小巧的c语言实现是<a target="_blank" rel="noopener" href="https://github.com/kokke/tiny-AES-c">https://github.com/kokke/tiny-AES-c</a>，python的一些AES实现:<a target="_blank" rel="noopener" href="https://gist.github.com/raullenchai/2920069">https://gist.github.com/raullenchai/2920069</a>，<a target="_blank" rel="noopener" href="https://github.com/hlilje/aes-python.git">https://github.com/hlilje/aes-python.git</a></li>
-<li>这里再介绍一下python的<a target="_blank" rel="noopener" href="https://github.com/Legrandin/pycryptodome.git">https://github.com/Legrandin/pycryptodome.git</a>库，这个虽然是python库，但底层算法是c写的，所以性能上是非常不错的，可以安装这个库替换python的Crypto库，也可以与Crypto共存。这个库可以作为python中各种加密算法的标准库来使用。</li>
-<li>因为这里是以学习为目的，所以本文不考虑任何性能上的问题</li>
+<li><p>最近实际逆向过程中，经常会遇到AES算法，而且有时也会遇到一些非标准AES或者魔改的AES</p>
+</li>
+<li><p>本着进一步了解AES算法的态度，决定结合网上各种资料，自己动手实现一次AES加解密，加深自己对AES的了解</p>
+</li>
+<li><p>当然网上有很多优秀的AES实现了，其中最著名的当属：<a target="_blank" rel="noopener" href="https://github.com/openssl/openssl">openssl</a>，openssl包含非常多的密码学算法的实现，而且很多都是性能优化后的实现。一个比较小巧的c语言实现是：<a target="_blank" rel="noopener" href="https://github.com/kokke/tiny-AES-c">https://github.com/kokke/tiny-AES-c</a></p>
+</li>
+<li><p>python的一些AES实现:</p>
+<ul>
+<li><p><a target="_blank" rel="noopener" href="https://gist.github.com/raullenchai/2920069">https://gist.github.com/raullenchai/2920069</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/hlilje/aes-python.git">https://github.com/hlilje/aes-python.git</a></p>
+</li>
+</ul>
+</li>
+<li><p>这里再介绍一下python的：<a target="_blank" rel="noopener" href="https://github.com/Legrandin/pycryptodome.git">pycryptodome</a>库，这个虽然是python库，但底层算法是c写的，所以性能上是非常不错的，可以安装这个库替换python的Crypto库，也可以与Crypto共存。这个库可以作为python中各种加密算法的标准库来使用。</p>
+</li>
+<li><p>因为这里是以学习为目的，所以本文不考虑任何性能上的问题</p>
+</li>
 </ul>
           <!--noindex-->
             <div class="post-button">
