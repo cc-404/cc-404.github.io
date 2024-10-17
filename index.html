@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta property="og:type" content="website">
+<meta property="og:title" content="CC的博客">
+<meta property="og:url" content="https://blog.iz4.cc/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="android, java, python, linux, openwrt, misc">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.iz4.cc/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/article/2024/10/Qiling%E6%A1%86%E6%9E%B6%E6%A8%A1%E6%8B%9F%E8%BF%90%E8%A1%8C%E5%9B%BA%E4%BB%B6%E9%85%8D%E5%90%88IDA%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/article/2024/10/Qiling%E6%A1%86%E6%9E%B6%E6%A8%A1%E6%8B%9F%E8%BF%90%E8%A1%8C%E5%9B%BA%E4%BB%B6%E9%85%8D%E5%90%88IDA%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95/" class="post-title-link" itemprop="url">Qiling框架模拟运行固件配合IDA动态调试</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-10-17 11:33:42 / 修改时间：12:12:54" itemprop="dateCreated datePublished" datetime="2024-10-17T11:33:42+08:00">2024-10-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/article/" itemprop="url" rel="index"><span itemprop="name">article</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="前前言"><a href="#前前言" class="headerlink" title="前前言"></a>前前言</h3><ul>
+<li>这个也是老早之前发在看雪上的帖子，原帖地址: <a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-274828.htm">https://bbs.kanxue.com/thread-274828.htm</a>，之所以搬回自己博客的原因是：这样可以免登录查看</li>
+<li>以下开始为原贴内容</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/article/2024/10/Qiling%E6%A1%86%E6%9E%B6%E6%A8%A1%E6%8B%9F%E8%BF%90%E8%A1%8C%E5%9B%BA%E4%BB%B6%E9%85%8D%E5%90%88IDA%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/" class="post-title-link" itemprop="url">一个简单的STM32固件分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-10-17 11:32:18 / 修改时间：12:12:39" itemprop="dateCreated datePublished" datetime="2024-10-17T11:32:18+08:00">2024-10-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/article/" itemprop="url" rel="index"><span itemprop="name">article</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="前前言"><a href="#前前言" class="headerlink" title="前前言"></a>前前言</h3><ul>
+<li>这个是老早之前发在看雪上的帖子，原帖地址: <a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-274788.htm">https://bbs.kanxue.com/thread-274788.htm</a>，之所以搬回自己博客的原因是：这样可以免登录查看</li>
+<li>以下开始为原贴内容</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/" class="post-title-link" itemprop="url">CW308T-AVR使用笔记</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-16 12:49:37" itemprop="dateCreated datePublished" datetime="2023-04-16T12:49:37+08:00">2023-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:10" itemprop="dateModified" datetime="2024-10-16T13:19:10+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>最近入手了ChipWhisperer的CW308 的底板，方便进一步学习侧信道攻击，详见官网介绍：<a target="_blank" rel="noopener" href="https://rtfm.newae.com/Targets/CW308%20UFO/">https://rtfm.newae.com/Targets/CW308 UFO/</a></p>
+<p>  <img src="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/image-20230416125221810.png" alt="image-20230416125221810"></p>
+</li>
+<li><p>有了底板之后就可以自从官方的github仓库中 <a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-target-cw308t">https://github.com/newaetech/chipwhisperer-target-cw308t</a> 获取pcb源码，自己打板制作更多的目标板了，打板pcb可以白嫖嘉立创，每月两次免费打板机会（规则貌似是：如果上月消费&lt;20，那么两次免费打板仅限于立创EDA的工程文件，上月消费&gt;&#x3D;20，那么免费打板没有这个限制，具体以官方说明为准）</p>
+</li>
+<li><p>虽然嘉立创免费打板可能要受限于要立创EDA设计，但是基于ChipWhisperer开源的Altium Designer的工程文件和原理图，还是可以自己将AD工程移植为立创EDA工程</p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/" class="post-title-link" itemprop="url">Python实现AES加解密</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-17 14:49:52" itemprop="dateCreated datePublished" datetime="2022-09-17T14:49:52+08:00">2022-09-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:11" itemprop="dateModified" datetime="2024-10-16T13:19:11+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>最近实际逆向过程中，经常会遇到AES算法，而且有时也会遇到一些非标准AES或者魔改的AES</p>
+</li>
+<li><p>本着进一步了解AES算法的态度，决定结合网上各种资料，自己动手实现一次AES加解密，加深自己对AES的了解</p>
+</li>
+<li><p>当然网上有很多优秀的AES实现了，其中最著名的当属：<a target="_blank" rel="noopener" href="https://github.com/openssl/openssl">openssl</a>，openssl包含非常多的密码学算法的实现，而且很多都是性能优化后的实现。一个比较小巧的c语言实现是：<a target="_blank" rel="noopener" href="https://github.com/kokke/tiny-AES-c">https://github.com/kokke/tiny-AES-c</a></p>
+</li>
+<li><p>python的一些AES实现:</p>
+<ul>
+<li><p><a target="_blank" rel="noopener" href="https://gist.github.com/raullenchai/2920069">https://gist.github.com/raullenchai/2920069</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/hlilje/aes-python.git">https://github.com/hlilje/aes-python.git</a></p>
+</li>
+</ul>
+</li>
+<li><p>这里再介绍一下python的：<a target="_blank" rel="noopener" href="https://github.com/Legrandin/pycryptodome.git">pycryptodome</a>库，这个虽然是python库，但底层算法是c写的，所以性能上是非常不错的，可以安装这个库替换python的Crypto库，也可以与Crypto共存。这个库可以作为python中各种加密算法的标准库来使用。</p>
+</li>
+<li><p>因为这里是以学习为目的，所以本文不考虑任何性能上的问题</p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/" class="post-title-link" itemprop="url">解决Switch-Tinfoil下载提示-SSL时间不对问题</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-11 13:21:35" itemprop="dateCreated datePublished" datetime="2022-09-11T13:21:35+08:00">2022-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:21" itemprop="dateModified" datetime="2024-10-16T13:19:21+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>switch 硬破后，一般都把任天堂相关的域名IP屏蔽了，所以就不能自动联网校准时间</p>
+</li>
+<li><p>时间久了，switch的时间就会与标准时间偏差很大，使用Tinfoil下载就有可能会出现下面的错误，这种情况手动设置时间一般与无济于事</p>
+  <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SSL Connection failed.</span><br><span class="line">Your system clock is likely incorrect.</span><br><span class="line">Please ensure your system date time is set correctly.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>这时候就可以使用一个插件来同步时间：<a target="_blank" rel="noopener" href="https://github.com/nedex/QuickNTP.git">https://github.com/nedex/QuickNTP.git</a></p>
+</li>
+<li><p>但QuickNTP默认的几个服务器，有时候也会出现连不上情况</p>
+</li>
+<li><p>接下来介绍，如何将QuickNTP默认的NTP服务器替换为国内NTP服务器并重新编译.ovl文件</p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3ChipWhisperer-Unable-to-import-LASCAR%E9%94%99%E8%AF%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3ChipWhisperer-Unable-to-import-LASCAR%E9%94%99%E8%AF%AF/" class="post-title-link" itemprop="url">解决ChipWhisperer-Unable to import LASCAR错误</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 10:19:00" itemprop="dateCreated datePublished" datetime="2022-09-10T10:19:00+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:21" itemprop="dateModified" datetime="2024-10-16T13:19:21+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><ul>
+<li><p>最近学习chipwhisperer时，遇到了点问题，运行<code>import chipwhisperer.common.api.lascar as cw_lascar</code>会报两个错误&quot;Unable to import LASCAR&quot;和&quot;NameError: name &#39;Container&#39; is not defined&quot;</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3ChipWhisperer-Unable-to-import-LASCAR%E9%94%99%E8%AF%AF/image-20220910102604114.png" alt="image-20220910102604114"></p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3ChipWhisperer-Unable-to-import-LASCAR%E9%94%99%E8%AF%AF/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/" class="post-title-link" itemprop="url">侧信道攻击伪实战-分析一道硬件CTF题</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-03 21:23:31" itemprop="dateCreated datePublished" datetime="2022-09-03T21:23:31+08:00">2022-09-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:18" itemprop="dateModified" datetime="2024-10-16T13:19:18+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>使用前面学习了那么多侧信道攻击的内容，是时候实战一波了</p>
+</li>
+<li><p>本文这道题来自<a target="_blank" rel="noopener" href="https://github.com/Riscure/Rhme-2016">https://github.com/Riscure/Rhme-2016</a>的<strong>piece_of_scake</strong>，下图为这题的提示信息</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903214212850.png" alt="image-20220903214212850"></p>
+</li>
+<li><p>本文大部分内容基于这个视频中对这道题的解法，很不错的视频，值得一看：<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=FktI4qSjzaE&list=PLhixgUqwRTjwNaT40TqIIagv3b4_bfB7M&index=14">https://www.youtube.com/watch?v=FktI4qSjzaE&list=PLhixgUqwRTjwNaT40TqIIagv3b4_bfB7M&amp;index&#x3D;14</a></p>
+</li>
+<li><p>与上面提到的视频不同，这里为了方便起见使用的硬件为用面包板构造的Arduino最小系统，这样做的好处在于接电阻、接线和拆器件方便</p>
+</li>
+<li><p>最近更新了关于这道CTF题的另一篇文章，可供参考：<a href="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/" title="CW308T-AVR使用笔记">CW308T-AVR使用笔记</a></p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/09/%E4%BD%BF%E7%94%A8Atmega328P%E6%90%AD%E5%BB%BAArduino%E6%9C%80%E5%B0%8F%E7%B3%BB%E7%BB%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/note/2022/09/%E4%BD%BF%E7%94%A8Atmega328P%E6%90%AD%E5%BB%BAArduino%E6%9C%80%E5%B0%8F%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">使用Atmega328P搭建Arduino最小系统</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-03 09:31:58" itemprop="dateCreated datePublished" datetime="2022-09-03T09:31:58+08:00">2022-09-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:17" itemprop="dateModified" datetime="2024-10-16T13:19:17+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li>最近为了方便折腾硬件CTF，于是准备用Atmega328P-PU搭建Arduino最小系统</li>
+<li>需要用到的器件<ul>
+<li>面包板 x1</li>
+<li>Atmega328P-PU x 1</li>
+<li>USB转UART x1（建议有DTR引脚的，可以用来自动Reset）</li>
+<li>22pF 陶瓷电容 x2</li>
+<li>16 MHz晶振</li>
+<li>Arduino uno或者Arduino mini x1（用于给Atmega328P-PU芯片烧录bootloader）</li>
+<li>导线（杜邦线，面包板线）</li>
+<li>1µF (100nF) 陶瓷电容x2（可选）</li>
+<li>10 kΩ电阻（可选）</li>
+<li>二极管（可选）</li>
+</ul>
+</li>
+</ul>
+<p><img src="/note/2022/09/%E4%BD%BF%E7%94%A8Atmega328P%E6%90%AD%E5%BB%BAArduino%E6%9C%80%E5%B0%8F%E7%B3%BB%E7%BB%9F/arduino.gif" alt="arduino"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/note/2022/09/%E4%BD%BF%E7%94%A8Atmega328P%E6%90%AD%E5%BB%BAArduino%E6%9C%80%E5%B0%8F%E7%B3%BB%E7%BB%9F/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08-ChipWhisperer-Analyzer-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08-ChipWhisperer-Analyzer-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB/" class="post-title-link" itemprop="url">侧信道攻击学习笔记8-ChipWhisperer Analyzer 相关性能量分析攻击</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-28 16:03:57" itemprop="dateCreated datePublished" datetime="2022-08-28T16:03:57+08:00">2022-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:21" itemprop="dateModified" datetime="2024-10-16T13:19:21+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>本篇将继续跟随<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-jupyter">chipwhisperer-jupyter</a> sca101的教程来学习使用ChipWhisperer Analyzer提供的API来进行相关性能量分析（CPA）攻击</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08-ChipWhisperer-Analyzer-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB/cpa2.gif" alt="cpa2"></p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08-ChipWhisperer-Analyzer-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">侧信道攻击学习笔记7-相关性能量分析攻击固件中的AES实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-27 16:45:24" itemprop="dateCreated datePublished" datetime="2022-08-27T16:45:24+08:00">2022-08-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:20" itemprop="dateModified" datetime="2024-10-16T13:19:20+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>本篇将继续跟随<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-jupyter">chipwhisperer-jupyter</a> sca101的教程来学习比差分能量分析（Differential Power Analysis, DPA）更强大的相关性能量分析（Correlation Power Analysis, CPA）</p>
+</li>
+<li><p>在之前的DPA学习中为了恢复完整的AES密钥，需要抓取了大量的能量迹（几千条），而这里使用CPA只需要50条能量迹即可恢复完整的AES密钥，如此足矣可见这个方法的强大之处</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220827165052510.png" alt="image-20220827165052510"></p>
+</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07-%E7%9B%B8%E5%85%B3%E6%80%A7%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+</body>
+</html>

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第二十一章Windows消息钩取钩子（Hook） 英文Hook一词，翻成中文是&quot;钩子&quot;、&quot;鱼钩&quot;的意思，泛指勾取所需东西而使用的一切工具。&quot;钩子&quot;这一基本含义被延伸发展为&quot;偷看或截取信息时所用的手段或工具&quot;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记12">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第二十一章Windows消息钩取钩子（Hook） 英文Hook一词，翻成中文是&quot;钩子&quot;、&quot;鱼钩&quot;的意思，泛指勾取所需东西而使用的一切工具。&quot;钩子&quot;这一基本含义被延伸发展为&quot;偷看或截取信息时所用的手段或工具&quot;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211208144510124.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211208144510124.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210095813040.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210111753611.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210112040141.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210112350891.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210112903242.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210113257063.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210113541186.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210164854939.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210171134527.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210171339846.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210172730064.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210173108633.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210173314132.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210173443709.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210192921720.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210193300985.png">
+<meta property="article:published_time" content="2021-12-08T01:48:37.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:13.874Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211208144510124.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记12 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记12
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-08 09:48:37" itemprop="dateCreated datePublished" datetime="2021-12-08T09:48:37+08:00">2021-12-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:13" itemprop="dateModified" datetime="2024-10-16T13:19:13+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第二十一章"><a href="#逆向工程核心原理第二十一章" class="headerlink" title="逆向工程核心原理第二十一章"></a>逆向工程核心原理第二十一章</h3><h4 id="Windows消息钩取"><a href="#Windows消息钩取" class="headerlink" title="Windows消息钩取"></a>Windows消息钩取</h4><h5 id="钩子（Hook）"><a href="#钩子（Hook）" class="headerlink" title="钩子（Hook）"></a>钩子（Hook）</h5><ul>
+<li><p>英文Hook一词，翻成中文是&quot;钩子&quot;、&quot;鱼钩&quot;的意思，泛指勾取所需东西而使用的一切工具。&quot;钩子&quot;这一基本含义被延伸发展为&quot;偷看或截取信息时所用的手段或工具&quot;</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211208144510124.png" alt="image-20211208144510124"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h5 id="消息钩子"><a href="#消息钩子" class="headerlink" title="消息钩子"></a>消息钩子</h5><ul>
+<li><p>Windows操作系统向用户提供GUI（Graphic User Interface，图形用户界面），它事件驱动（Event Driven）方式工作。在操作系统中借助键盘、鼠标，选择菜单、按钮，以及移动鼠标、改遍窗口大小与位置等都是事件（Event）。发生这样的事件时，OS会把事先定义好的消息发送给相应的应用程序，应用程序分析收到的信息后执行相应的动作。也就是说，敲击键盘时，消息会从OS移动到应用程序。所谓的&quot;消息钩子&quot;就在此间偷看这些信息。</p>
+</li>
+<li><p>常规Windows消息流</p>
+<ul>
+<li>发生键盘输入事件时，WM_KEYDOWN消息被添加到[OS message queue]</li>
+<li>OS判断哪个应用程序中发生了事件，然后从[OS message queue]取出消息，添加到相应应用程序的[application message queue]中</li>
+<li>应用程序（如记事本）监视自身的[application message queue]，发现新添加的WM_KEYDOWN消息后，调用相应的事件处理程序处理</li>
+</ul>
+</li>
+<li><p>如下图所示，OS消息队列与应用程序消息队列之间存在一条&quot;钩链&quot;（Hook Chain），设置好键盘消息钩子之后，处于&quot;钩链&quot;中的键盘消息钩子会比应用程序先看到相应信息。在键盘消息钩子函数内部，除了可以查看消息之外，还可以修改消息本身，而且还能对消息实施拦截，阻止消息传递。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211208144510124.png" alt="image-20211208144510124"></p>
+</li>
+<li><p>像这样的消息钩子功能是Windows操作系统提供的基本功能，其中最具代表性的是MS Visual Studio中提供的SPY++，它是一个功能十分强大的消息钩起程序，能够查看操作系统中来往的所有消息。</p>
+</li>
+</ul>
+<h5 id="SetWindowsHookEx"><a href="#SetWindowsHookEx" class="headerlink" title="SetWindowsHookEx()"></a>SetWindowsHookEx()</h5><ul>
+<li><p>使用SetWindowsHookEx() API可轻松实现消息钩子，SetWindowsHookEx() API的定义如下</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">HHOOK <span class="title">SetWindowsHookEx</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">int</span> idHook;			<span class="comment">// hook type</span></span></span></span><br><span class="line"><span class="params"><span class="function">    HOOKPROC lpfn;		<span class="comment">// hook procedure</span></span></span></span><br><span class="line"><span class="params"><span class="function">    HINSTANCE hMod;		<span class="comment">// hook procedure所属的DLL句柄</span></span></span></span><br><span class="line"><span class="params"><span class="function">    DWORD dwThreadID	<span class="comment">// 想要挂钩的线程ID</span></span></span></span><br><span class="line"><span class="params"><span class="function">)</span></span>; </span><br></pre></td></tr></table></figure>
+</li>
+<li><p>钩子过程（hook procedure）是由操作系统调用的回调函数。安装消息&quot;钩子&quot;时，&quot;钩子&quot;过程需要存在于某个DLL内部，且该DLL的实例句柄（instance handle）即是hMod。</p>
+<blockquote>
+<p>若dwThreadID参数被设置为0，则安装的钩子为&quot;全局钩子&quot;（Global Hook），它会影响到运行中的（以及以后要运行的）所有进程</p>
+</blockquote>
+</li>
+</ul>
+<h5 id="键盘消息钩取练习"><a href="#键盘消息钩取练习" class="headerlink" title="键盘消息钩取练习"></a>键盘消息钩取练习</h5><ul>
+<li><p>下面做一个简单的键盘消息钩取练习，以进一步加深对前面内容的理解</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210095813040.png" alt="image-20211210095813040"></p>
+</li>
+<li><p>KeyHook.dll文件是一个含有钩子的过程（KeyboardProc）的DLL文件。HooMain.exe是最先加载KeyHook.dll并安装键盘钩子的程序。HookMain.exe加载KeyHook.dll文件后使用SetWindowsHookEx()安装键盘钩子（KeyboardProc）。若其他进程（explore.exe、iexplore.exe、notepad.exe等）中发生键盘输入事件，OS就会强制将KeyHook.dll加载到相应进程的内存，然后调用KeyboardProc()函数。</p>
+</li>
+</ul>
+<h5 id="练习示例HooKMain-exe"><a href="#练习示例HooKMain-exe" class="headerlink" title="练习示例HooKMain.exe"></a>练习示例HooKMain.exe</h5><ul>
+<li><p>从《逆向工程核心原理》书的官方github<a target="_blank" rel="noopener" href="https://github.com/reversecore/book.git">https://github.com/reversecore/book.git</a>，下载HookMain的源代码（有可执行程序，但是64位系统的不能使用，64位系统使用32位的Hook程序会直接卡死，所以需要自己编译测试）</p>
+<blockquote>
+<p>一开始直接用32位的编译程序在64位的win10上运行，发现一直卡死。搜索后，在这篇文章找到了原因<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_39627797/article/details/79495500">windows10 记事本进程 键盘消息钩子 dll注入</a>，原因是：<a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/windows/win32/api/winuser/nf-winuser-setwindowshookexa?redirectedfrom=MSDN">SetWindowsHookEx</a>的官方文档提到了这个API只能用于32位程序注入32位程序或者64位注入64位程序，否则会直接卡死。</p>
+</blockquote>
+</li>
+<li><p>下载源代码后，用visual studio打开HookMain和KeyHook项目后，新建一个x64平台的活动解决方案，然后生成即可</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210111753611.png" alt="image-20211210111753611"></p>
+</li>
+<li><p>编译生成好HookMain.exe和KeyHook.dll后，将两者放在一个文件夹下，运行HookMain.exe，安装键盘钩子</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210112040141.png" alt="image-20211210112040141"></p>
+</li>
+<li><p>接着运行notepad.exe，使用Process Explore查看notepad.exe进程，在Process Explore选项卡中选择View DLLs(Ctrl + D)即可查看进程加载了哪些DLL文件，如下图所示，可以看到KeyHook.dll已经注入到notepad.exe进程中</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210112350891.png" alt="image-20211210112350891"></p>
+</li>
+<li><p>在Process Explorer中检索（Find Handle or DLL ...  Ctrl + Shift + F）注入KeyHook.dll的所有进程，如下图所示，一个进程开始运行并发生键盘事件时，KeyHook.dll就会注入其中（但忽视键盘事件的仅有notepad.exe进程，其他进程会正常处理键盘事件）</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210112903242.png" alt="image-20211210112903242"></p>
+</li>
+<li><p>按&quot;q&quot;，拆除键盘钩子，在notepad.exe中使用键盘输入，可以发现又能正常输入了。在Process Explorer中检索KeyHook会发现，没有进程加载KeyHook.dll</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210113257063.png" alt="image-20211210113257063"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210113541186.png" alt="image-20211210113541186"></p>
+</li>
+<li><p>拆除键盘钩子后，相关进程就会将KeyHook.dll文件全部卸载</p>
+</li>
+</ul>
+<h5 id="分析源代码"><a href="#分析源代码" class="headerlink" title="分析源代码"></a>分析源代码</h5><ul>
+<li><p>下载书中的源代码，首先看一下HookMain.cpp的源代码</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdio.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;conio.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;windows.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>	DEF_DLL_NAME		<span class="string">&quot;KeyHook.dll&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>	DEF_HOOKSTART		<span class="string">&quot;HookStart&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>	DEF_HOOKSTOP		<span class="string">&quot;HookStop&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">(*PFN_HOOKSTART)</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">(*PFN_HOOKSTOP)</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	HMODULE			hDll = <span class="literal">NULL</span>;</span><br><span class="line">	PFN_HOOKSTART	HookStart = <span class="literal">NULL</span>;</span><br><span class="line">	PFN_HOOKSTOP	HookStop = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">char</span>			ch = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 加载 KeyHook.dll </span></span><br><span class="line">	hDll = <span class="built_in">LoadLibraryA</span>(DEF_DLL_NAME);</span><br><span class="line">    <span class="keyword">if</span>( hDll == <span class="literal">NULL</span> )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;LoadLibrary(%s) failed!!! [%d]&quot;</span>, DEF_DLL_NAME, <span class="built_in">GetLastError</span>());</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取导出函数地址</span></span><br><span class="line">	HookStart = (PFN_HOOKSTART)<span class="built_in">GetProcAddress</span>(hDll, DEF_HOOKSTART);</span><br><span class="line">	HookStop = (PFN_HOOKSTOP)<span class="built_in">GetProcAddress</span>(hDll, DEF_HOOKSTOP);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 启动Hook</span></span><br><span class="line">	<span class="built_in">HookStart</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待用户输入&quot;q&quot;</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;press &#x27;q&#x27; to quit!\n&quot;</span>);</span><br><span class="line">	<span class="keyword">while</span>( _getch() != <span class="string">&#x27;q&#x27;</span> );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 停止Hook</span></span><br><span class="line">	<span class="built_in">HookStop</span>();</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 卸载KeyHook.dll</span></span><br><span class="line">	<span class="built_in">FreeLibrary</span>(hDll);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>HookMain.exe的源代码非常简单，先加载KeyHook.dll文件，然后调用HookStart()函数开始钩取，用户输入&quot;q&quot;时，调用HookStop()函数终止钩取。</p>
+</li>
+<li><p>接下来看看KeyHook.dll文件的源代码</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdio.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;windows.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DEF_PROCESS_NAME		<span class="string">&quot;notepad.exe&quot;</span></span></span><br><span class="line"></span><br><span class="line">HINSTANCE g_hInstance = <span class="literal">NULL</span>;</span><br><span class="line">HHOOK g_hHook = <span class="literal">NULL</span>;</span><br><span class="line">HWND g_hWnd = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line"><span class="function">BOOL WINAPI <span class="title">DllMain</span><span class="params">(HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvReserved)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">switch</span>( dwReason )</span><br><span class="line">	&#123;</span><br><span class="line">        <span class="keyword">case</span> DLL_PROCESS_ATTACH:</span><br><span class="line">			g_hInstance = hinstDLL;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> DLL_PROCESS_DETACH:</span><br><span class="line">			<span class="keyword">break</span>;	</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">LRESULT CALLBACK <span class="title">KeyboardProc</span><span class="params">(<span class="type">int</span> nCode, WPARAM wParam, LPARAM lParam)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">char</span> szPath[MAX_PATH] = &#123;<span class="number">0</span>,&#125;;</span><br><span class="line">	<span class="type">char</span> *p = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>( nCode &gt;= <span class="number">0</span> )</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">// bit 31 : 0 =&gt; press, 1 =&gt; release</span></span><br><span class="line">		<span class="keyword">if</span>( !(lParam &amp; <span class="number">0x80000000</span>) ) <span class="comment">// 释放键盘按键时</span></span><br><span class="line">		&#123;</span><br><span class="line">			<span class="built_in">GetModuleFileNameA</span>(<span class="literal">NULL</span>, szPath, MAX_PATH);</span><br><span class="line">			p = <span class="built_in">strrchr</span>(szPath, <span class="string">&#x27;\\&#x27;</span>);</span><br><span class="line">            <span class="comment">// 比较当前进程名称，若为notepad.exe则消息不会传递给应用程序（或下一个&quot;钩子&quot;）</span></span><br><span class="line">			<span class="keyword">if</span>( !_stricmp(p + <span class="number">1</span>, DEF_PROCESS_NAME) )</span><br><span class="line">				<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 若非notepad.exe，则调用CallNextHooxEx()函数，将消息传递给应用程序（或下一个&quot;钩子&quot;）</span></span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">CallNextHookEx</span>(g_hHook, nCode, wParam, lParam);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	__declspec(dllexport) <span class="function"><span class="type">void</span> <span class="title">HookStart</span><span class="params">()</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">		g_hHook = <span class="built_in">SetWindowsHookEx</span>(WH_KEYBOARD, KeyboardProc, g_hInstance, <span class="number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	__declspec(dllexport) <span class="function"><span class="type">void</span> <span class="title">HookStop</span><span class="params">()</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">		<span class="keyword">if</span>( g_hHook )</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="built_in">UnhookWindowsHookEx</span>(g_hHook);</span><br><span class="line">			g_hHook = <span class="literal">NULL</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __cplusplus</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>DLL代码部分，调用导出函数HookStart()时，SetWindowsHookEx()函数就会将KeyboardProc()添加到键盘钩链</p>
+</li>
+<li><p>MSDN中对KeyboardProc函数的定义如下：</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">LRESULT CALLBACK <span class="title">KeyboardProc</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">	<span class="type">int</span> code,	<span class="comment">// HC_ACTION(0), HC_NOREMOVE(3)</span></span></span></span><br><span class="line"><span class="params"><span class="function">    WPARAM wParam, <span class="comment">// virtual-key code</span></span></span></span><br><span class="line"><span class="params"><span class="function">    LPARAM lParam <span class="comment">// extra information</span></span></span></span><br><span class="line"><span class="params"><span class="function">)</span></span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装好键盘&quot;钩子&quot;后，无论哪个进程，只要发生键盘输入事件，OS就会强制将KeyHook.dll注入相应进程。加载了KeyHook.dll的进程中，发生键盘事件时，就会首先调用执行KeyHook.KeyboardProc()</p>
+</li>
+<li><p>KeyboardProc()函数作用，判断当前发生键盘事件的进程是否为notepad.exe，如果是notepad.exe，那么返回1（拦截键盘事件，不往下传递），否则将键盘事件原封不动地传递给应用程序（或者下一个钩链）</p>
+</li>
+</ul>
+<h5 id="调试练习"><a href="#调试练习" class="headerlink" title="调试练习"></a>调试练习</h5><ul>
+<li><p>因为上面编译的HookMain.exe和KeyHook.dll都是64位的，Ollydbg不支持64可执行文件，所以这里使用<a target="_blank" rel="noopener" href="https://github.com/x64dbg/x64dbg/">x64dbg</a>进行调试</p>
+</li>
+<li><p>因为HookMain.exe有字符串&quot;press &#39;q&#39; to quit!&quot;，字符串，所以这里可以使用搜索字符串定位到核心代码，如下图所示，图中代码就是HookMain.exe到main()函数</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210164854939.png" alt="image-20211210164854939"></p>
+</li>
+<li><p>可以看到64位程序的寄存器名称都变成了R开头，但跟32位的寄存器大同小异。在&quot;140069910&quot;地址处下断点，然后运行程序，到断点处停下来，开始调试。从断点处开始依次跟踪调试代码，可以了解main()中的主要代码流。</p>
+</li>
+<li><p>先在&quot;14006994E&quot;地址处调用LoadLibrary(&quot;KeyHook.dll&quot;)，然后在&quot;1400699A7&quot;地址处调用HookStart()函数，该处执行后notepad.exe的键盘事件就会被拦截</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210171134527.png" alt="image-20211210171134527"></p>
+</li>
+<li><p>F7步入查看HookStart()函数内容，可以看到在&quot;1800698F1&quot;调用了SetWindowsHookExW()函数</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210171339846.png" alt="image-20211210171339846"></p>
+</li>
+</ul>
+<h5 id="调试notepad-exe进程内的KeyHook-dll"><a href="#调试notepad-exe进程内的KeyHook-dll" class="headerlink" title="调试notepad.exe进程内的KeyHook.dll"></a>调试notepad.exe进程内的KeyHook.dll</h5><ul>
+<li><p>先启动HookMain.exe</p>
+</li>
+<li><p>用x64dbg调试notepad.exe，F9让notepad.exe正常运行，然后在x64dbg的选项中勾选DLL入口，这样当新的DLL装入时，调试器会在DLL入口处停止（调试完后再取消勾选）。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210172730064.png" alt="image-20211210172730064"></p>
+</li>
+<li><p>在notepad.exe界面中，键盘输入触发KeyHook.dll装载。x64dbg中选择内存布局选项卡，可以看到keyhook.dll被装载在180000000地址处</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210173108633.png" alt="image-20211210173108633"></p>
+</li>
+<li><p>点击CPU选项卡，回到主界面，可以看到，此时调试器停在KeyHook.dll的EP，</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210173314132.png" alt="image-20211210173314132"></p>
+</li>
+<li><p>如下图所示，F7跟进&quot;18006A41C&quot;处的调用dllmain_dispatch，从函数名来看，这个函数就是DLLMain函数的转发的函数</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210173443709.png" alt="image-20211210173443709"></p>
+</li>
+<li><p>继续调试，可以找到DLLMain函数调用的地方，如下图所示，在&quot;18006A243&quot;处调用了KeyHook.dll的DLLMain函数</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210192921720.png" alt="image-20211210192921720"></p>
+</li>
+<li><p>F7步入&quot;18006A243&quot;该处的调用，就可以看到DLLMain函数，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/image-20211210193300985.png" alt="image-20211210193300985"></p>
+</li>
+<li><p>KeyHook.dll的KeyboardProc函数则可以通过搜索字符串&quot;notepad.exe&quot;来定位</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/" rel="prev" title="《逆向工程核心原理》学习笔记11">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记11
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B013/" rel="next" title="《逆向工程核心原理》学习笔记13">
+      《逆向工程核心原理》学习笔记13 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第二十一章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Windows%E6%B6%88%E6%81%AF%E9%92%A9%E5%8F%96"><span class="nav-number">1.1.</span> <span class="nav-text">Windows消息钩取</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%92%A9%E5%AD%90%EF%BC%88Hook%EF%BC%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">钩子（Hook）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E9%92%A9%E5%AD%90"><span class="nav-number">1.1.2.</span> <span class="nav-text">消息钩子</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#SetWindowsHookEx"><span class="nav-number">1.1.3.</span> <span class="nav-text">SetWindowsHookEx()</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%94%AE%E7%9B%98%E6%B6%88%E6%81%AF%E9%92%A9%E5%8F%96%E7%BB%83%E4%B9%A0"><span class="nav-number">1.1.4.</span> <span class="nav-text">键盘消息钩取练习</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%83%E4%B9%A0%E7%A4%BA%E4%BE%8BHooKMain-exe"><span class="nav-number">1.1.5.</span> <span class="nav-text">练习示例HooKMain.exe</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">1.1.6.</span> <span class="nav-text">分析源代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E7%BB%83%E4%B9%A0"><span class="nav-number">1.1.7.</span> <span class="nav-text">调试练习</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B0%83%E8%AF%95notepad-exe%E8%BF%9B%E7%A8%8B%E5%86%85%E7%9A%84KeyHook-dll"><span class="nav-number">1.1.8.</span> <span class="nav-text">调试notepad.exe进程内的KeyHook.dll</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '293191edcdc5cfbed00ab603a29ace32',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

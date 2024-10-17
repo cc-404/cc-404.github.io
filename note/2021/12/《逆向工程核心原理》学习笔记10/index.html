@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第十八章UPack PE文件头分析使用UPack压缩abexcm1.exe 使用WinUpack 0.39 Final版本压缩abexcm1.exe。直接拖拽abexcm1.exe到WinUpack，按以下勾选参数进行压缩，其中默认是没有清除重定位表的，这里勾选上以便复现原文。将压缩后abexcm1.exe重命名为abexcm1_upack.exe">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记10">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第十八章UPack PE文件头分析使用UPack压缩abexcm1.exe 使用WinUpack 0.39 Final版本压缩abexcm1.exe。直接拖拽abexcm1.exe到WinUpack，按以下勾选参数进行压缩，其中默认是没有清除重定位表的，这里勾选上以便复现原文。将压缩后abexcm1.exe重命名为abexcm1_upack.exe">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204162922497.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204163155007.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204163506287.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204164022657.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204164721595.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/4.55.56.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204171427997.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204202928417.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204203319376.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204204439471.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204214502804.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204215046678.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204215948031.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204222232165.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204223804768.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204224202028.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204225058145.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204225454371.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204225842802.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204230434611.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204232357659.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204233029629.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204234101448.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204235022350.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204235326466.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204235354500.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205112358070.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205112848841.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205113109965.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205114733058.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205170248915.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205170523733.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205172256256.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205173322197.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205173733473.png">
+<meta property="article:published_time" content="2021-12-04T07:37:13.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:12.631Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204162922497.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记10 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记10
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-04 15:37:13" itemprop="dateCreated datePublished" datetime="2021-12-04T15:37:13+08:00">2021-12-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:12" itemprop="dateModified" datetime="2024-10-16T13:19:12+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第十八章"><a href="#逆向工程核心原理第十八章" class="headerlink" title="逆向工程核心原理第十八章"></a>逆向工程核心原理第十八章</h3><h4 id="UPack-PE文件头分析"><a href="#UPack-PE文件头分析" class="headerlink" title="UPack PE文件头分析"></a>UPack PE文件头分析</h4><h5 id="使用UPack压缩abexcm1-exe"><a href="#使用UPack压缩abexcm1-exe" class="headerlink" title="使用UPack压缩abexcm1.exe"></a>使用UPack压缩abexcm1.exe</h5><ul>
+<li><p>使用WinUpack 0.39 Final版本压缩abexcm1.exe。直接拖拽abexcm1.exe到WinUpack，按以下勾选参数进行压缩，其中默认是没有清除重定位表的，这里勾选上以便复现原文。将压缩后abexcm1.exe重命名为abexcm1_upack.exe</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204162922497.png" alt="image-20211204162922497"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<ul>
+<li><p>下图为使用PE View查看的结果，这里用的是PE View 0.9.9版，这个版本仍无法正常读取PE文件</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204163155007.png" alt="image-20211204163155007"></p>
+</li>
+</ul>
+<h5 id="使用Stud-PE工具"><a href="#使用Stud-PE工具" class="headerlink" title="使用Stud_PE工具"></a>使用Stud_PE工具</h5><ul>
+<li><p>下面使用Stud_PE查看abexcm1_upack.exe</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204163506287.png" alt="image-20211204163506287"></p>
+</li>
+<li><p>可以看到Stud_PE界面要比PE View界面复杂一些，但它拥有其他工具无法比拟的众多独特优点（也能更好地显示Upack）</p>
+</li>
+</ul>
+<h5 id="比较PE文件头"><a href="#比较PE文件头" class="headerlink" title="比较PE文件头"></a>比较PE文件头</h5><ul>
+<li><p>使用HEdit打开abexcm1.exe和abexcm1_upack.exe，再比较它们PE头部分</p>
+</li>
+<li><p>下图为原abexcm1.exe的PE文件头，其中数据按照IMAGE_DOS_HEADER、DOS Stub、IMAGE_NT_HEADERS、IMAGE_SECTIONS_HEADER顺序排列</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204164022657.png" alt="image-20211204164022657"></p>
+</li>
+<li><p>下图为abexcm1_upack.exe的PE文件头，可以看到abexcm1_upack.exe的PE头看上去有些奇怪。MZ与PE签名贴得太近了，并且没有DOS存根，出现了大量字符串，中间好像还夹杂着代码</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204164721595.png" alt="image-20211204164721595"></p>
+</li>
+</ul>
+<h4 id="分析UPack的PE文件头"><a href="#分析UPack的PE文件头" class="headerlink" title="分析UPack的PE文件头"></a>分析UPack的PE文件头</h4><h5 id="重叠文件头"><a href="#重叠文件头" class="headerlink" title="重叠文件头"></a>重叠文件头</h5><ul>
+<li><p>重叠文件头也是其他压缩器经常使用的技法，借助该方法可以把MZ文件头（IMAGE_DOS_HEADER）与PE文件头（IMAGE_NT_HEADERS）巧妙重叠在一起，并可有效节约文件头空间。</p>
+</li>
+<li><p>下面使用Stud_PE看一下MZ文件头部分，在文件头选项卡中，选择&quot;在十六进制编辑器中以树形结构查看文件头&quot;</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/4.55.56.png" alt="4.55.56"></p>
+</li>
+<li><p>MZ文件头（IMAGE_DOS_HEADER）中有以下2个重要成员，其余成员都不怎么重要（对程序运行没有任何意义）</p>
+<ul>
+<li>e_magic：Magic number &#x3D; 4D5A(&quot;MZ&quot;)</li>
+<li>e_lfanew：File address of new exe header</li>
+</ul>
+</li>
+<li><p>问题在于，根据PE文件格式规范，IMAGE_NT_HEADERS的起始位置是&quot;可变的&quot;。换言之，IMAGE_NT_HEADERS的起始位置是由e_lfanew的值决定的。一般在一个正常程序中，e_lfanew拥有如下所示的值（不同的构建环境会有不同）</p>
+<blockquote>
+<p>e_lfanew &#x3D; MZ文件头大小 (40) + DOS存根大小 (可变: VC++下为A0) &#x3D; E0</p>
+</blockquote>
+</li>
+<li><p>UPack中的e_lfanew的值为10，这并不违反PE规范，只是钻了规范的空子。像这样就可以把MZ文件头和PE文件头重叠在一起</p>
+</li>
+</ul>
+<h5 id="IMAGE-FILE-HEADER-SizeOfOptionalHeader"><a href="#IMAGE-FILE-HEADER-SizeOfOptionalHeader" class="headerlink" title="IMAGE_FILE_HEADER.SizeOfOptionalHeader"></a>IMAGE_FILE_HEADER.SizeOfOptionalHeader</h5><ul>
+<li><p>修改IMAFE_FILE_HEADER.SizeOfOptionalHeader的值，可以向文件头插入解码代码。</p>
+</li>
+<li><p>SizeOfOptionalHeader表示PE文件头中紧接在IMAGE_FILE_HEADER下的IMAGE_OPTIONAL_HEADER结构体的长度（E0）。如下图所示，Upack将该值更改为148</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204171427997.png" alt="image-20211204171427997"></p>
+</li>
+<li><p>这里会产生一个疑问，IMAGE_OPTIONAL_HEADER是结构体，PE32文件格式中其大小已经被确定为E0。既然如此，PE文件格式的设计者们为何还要另外输入IMAGE_OPTIONAL_HEADER结构体的大小呢？原本的设计意图是，根据PE文件形态分别更换并插入其他IMAGE_OPTIONAL_HEADER形态的结构体。简单来说，就是由于IMAGE_OPTIONAL_HEADER的种类很多，所以需要另外输入结构体大小（例如：64位PE32+的IMAGE_OPTIONAL_HEADER结构体的大小为F0）</p>
+</li>
+<li><p>SizeOfOptionalHeader的另一层含义是确定节区头（IMAGE_SECTION_HEADER）的起始偏移</p>
+</li>
+<li><p>仅从PE文件头来看，紧接着IMAGE_OPTIONAL_HEADER的好像就是IMAGE_SECTION_HEADER。但实际上（更准确地说），从IMAGE_OPTIONAL_HEADER的起始偏移加上SizeOfOptionalHeader值后的位置开始才是IMAGE_SECTION_HEADER</p>
+</li>
+<li><p>Upack把SizeOfOptionalHeader的值设置为148，比正常值（E0或F0）要更大一些。所以IMAGE_SECTION_HEADER是从偏移170开始的（IMAGE_OPTIONAL_HEADER起始偏移(28)+SizeOfOptionalHeader(148)&#x3D;170）</p>
+</li>
+<li><p>Upack这么修改的原因是：把PE文件头变形，向文件头适当插入解码需要的代码，增大逆向分析的难度</p>
+</li>
+<li><p>增大SizeOfOptionalHeader的值后，就在IMAGE_OPTIONAL_HEADER与IMAGE_SECTION_HEADER之间添加了额外空间，Upack就向这个区域添加解码代码。</p>
+</li>
+<li><p>下面查看该区域，IMAGE_OPTIONAL_HEADER结束位置为D7，IMAGE_SECTION_HEADER的起始位置为170。使用HEdit查看中间区域，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204202928417.png" alt="image-20211204202928417"></p>
+</li>
+<li><p>使用Ollydbg查看反汇编代码，如下图所示，这部分信息不是PE头文件中的信息，而是UPack中使用的代码。若PE相关实用工具将其识别为PE文件头信息，就会引发错误，导致程序无法正常运行</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204203319376.png" alt="image-20211204203319376"></p>
+</li>
+</ul>
+<h5 id="IMAGE-OPTIONAL-HEADER-NumberOfRvaAndSizes"><a href="#IMAGE-OPTIONAL-HEADER-NumberOfRvaAndSizes" class="headerlink" title="IMAGE_OPTIONAL_HEADER.NumberOfRvaAndSizes"></a>IMAGE_OPTIONAL_HEADER.NumberOfRvaAndSizes</h5><ul>
+<li><p>从IMAGE_OPTIONAL_HEADER结构体中可以看到，其NumberOfRvaAndSizes的值也发生了改变，这样做的目的也是为了向文件头插入自身代码</p>
+</li>
+<li><p>NumberOfRvaAndSizes值用来指出紧接在后面的IMAGE_DATA_DIRECTORY结构体数组的元素个数。正常文件中IMAGE_DATA_DIRECTORY数组元素的个数为10h，但在UPack中将其更改为了Ah个。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204204439471.png" alt="image-20211204204439471"></p>
+</li>
+<li><p>IMAGE_DATA_DIRECTORY结构体数组元素的个数已经被确定为10，但PE规范将NumberOfRvaSizes值作为数组元素的个数。所以UPack中IMAGE_DATA_DIRECTORY结构体数组的后6个元素被忽略。</p>
+</li>
+<li><p>下表对IMAGE_DATA_DIRECTORY的各项进行了说明，其中粗体的项如果更改不正确就会引发运行错误</p>
+<table>
+<thead>
+<tr>
+<th align="center">索 引</th>
+<th align="center">内 容</th>
+<th align="center">索 引</th>
+<th align="center">内 容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">0</td>
+<td align="center">EXPORT Directory</td>
+<td align="center">8</td>
+<td align="center">GLOBALPTR Directory</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td align="center"><strong>IMPORT Directory</strong></td>
+<td align="center"><strong>9</strong></td>
+<td align="center"><strong>TLS Directory</strong></td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td align="center"><strong>RESOURCE Directory</strong></td>
+<td align="center"><strong>A</strong></td>
+<td align="center"><strong>LOAD_CONFIG Directory</strong></td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td align="center"><strong>EXCEPTION Directory</strong></td>
+<td align="center"><strong>B</strong></td>
+<td align="center"><strong>BOUND_IMPORT Directory</strong></td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">SECURITY Directory</td>
+<td align="center"><strong>C</strong></td>
+<td align="center"><strong>IAT Directory</strong></td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">BASERELOC Directory</td>
+<td align="center">D</td>
+<td align="center">DELAY_IMPORT Directory</td>
+</tr>
+<tr>
+<td align="center"><strong>6</strong></td>
+<td align="center"><strong>DEBUG Directory</strong></td>
+<td align="center"><strong>E</strong></td>
+<td align="center"><strong>COM_DESCRIPTOR Directory</strong></td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="center">COPYRIGHT Directory</td>
+<td align="center">F</td>
+<td align="center">Reserved Directory</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>Upack将IMAGE_OPTIONAL_HEADER.NumberOfRvaAndSizes的值更改为A，从LOAD_CONFIG Directory项（文件偏移D8以后）开始不再使用。UPack就在这块被忽视的IMAGE_DATA_DIRECTORY区域中覆写自己的代码。</p>
+</li>
+<li><p>接下来使用HEdit查看IMAGE_OPTIONAL_HEADER结构体数组区域</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204214502804.png" alt="image-20211204214502804"></p>
+</li>
+</ul>
+<h5 id="IMAGE-SECTION-HEADER"><a href="#IMAGE-SECTION-HEADER" class="headerlink" title="IMAGE_SECTION_HEADER"></a>IMAGE_SECTION_HEADER</h5><ul>
+<li><p>IMAGE_SECTION_HEADER结构体中，Upack会把自身数据记录到程序运行不需要的项目。这与UPack向PE文件头中不使用的区域覆写自身代码与数据的方法是一样的</p>
+</li>
+<li><p>下面使用HEdit查看IMAGE_SECTION_HEADER结构体，UPack把代码数据存放在IMAGE_SECTION_HEADER结构体的offset to relocations、offset to line numbers、number of relocations、number of line numbers这四个成员中，因为这四个成员本身对程序运行没有任何意义</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204215046678.png" alt="image-20211204215046678"></p>
+</li>
+</ul>
+<h5 id="重叠节区"><a href="#重叠节区" class="headerlink" title="重叠节区"></a>重叠节区</h5><ul>
+<li><p>UPack的主要特征之一就是可以随意重叠PE节区与文件头，下面通过Stud_PE查看UPack的IMAGE_SECTION_HEADER</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204215948031.png" alt="image-20211204215948031"></p>
+</li>
+<li><p>从图可以看到，某些部分看上去比较奇怪。首先是第一个节区与第三个节区的文件起始偏移（RawOffset）值都为10。偏移10是文件头区域，UPack中该位置起即为节区部分。</p>
+</li>
+<li><p>另一奇怪的地方是，第一个节区和第三个节区的文件起始偏移与在文件中的大小（RawSize）是完全一致的。但是，节区内存的起始RVA（VirtualOffset）项与内存大小（VirtualSize）值是彼此不同的。根据PE规范，这样做不会有什么问题。</p>
+</li>
+<li><p>综合以上两点可知，UPack会对PE文件头、第一个节区、第三个节区进行重叠，三者重叠示意图如下。根据节区头（IMAGE_SECTION_HEADER）中的定义，PE装载器会将文件偏移0~1FF的区域分别映射到3个不同的内存位置（文件头、第一个节区、第三个节区）。也就是说，用相同的文件映像可以分别创建出处于不同位置的、不同大小的内存映像</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204222232165.png" alt="image-20211204222232165"></p>
+</li>
+<li><p>文件的头（第一&#x2F;第三节区）区域的大小为200，第二个节区大小为5A0（占据了文件的大部分区域），原文件（abexcm1.exe）就压缩于此</p>
+</li>
+<li><p>另一点需要注意的是内存中的第一个节区区域，它的内存尺寸为6000，与原文件（abexcm1.exe）的Size of   Image具有相同的值。也就是说，压缩在第二个节区中的文件映像会被原样解压缩到第一个节区（abexcm1的内存映像）。另外，原abexcm1.exe拥有5个节区，它们被解压到一个节区。</p>
+</li>
+</ul>
+<h5 id="RVA-to-RAW"><a href="#RVA-to-RAW" class="headerlink" title="RVA to RAW"></a>RVA to RAW</h5><ul>
+<li><p>各种PE实用程序对Upack束手无策的原因就是无法正确进行RVA&#x3D;&gt;RAW的变换。</p>
+</li>
+<li><p>首先复习下常规的RVA&#x3D;&gt;RAW方法</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">RAW - PointerToRawData = RVA - VirtualAddress</span><br><span class="line">RAW = RVA - VirtualAddress + PointerToRawData</span><br><span class="line">VirtualAddress、PointerToRawData是从RVA所在节区头中获取的值，它们都是已知值</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>根据上述公式，算一下EP的文件偏移量（RAW）。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204223804768.png" alt="image-20211204223804768"></p>
+</li>
+<li><p>UPack的EP是RVA 1018，RVA 1018位于第一个节区，将其代入公式，换算如下</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RAW = 1018 - 1000 + 10 = 28</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用HEdit查看文件偏移28处，如下图所示，可以看到RAW 28不是代码区域，而是（ordinal:010B）&quot;LoadLibraryA&quot;字符串区域。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204224202028.png" alt="image-20211204224202028"></p>
+</li>
+<li><p>造成上面这个问题原因在于第一个节区的PointerToRawData值10。一般而言，指向节区开始的文件偏移的PointerToRawData值应该是FileAlignment的整数倍。UPack的FileAlignment为200，故PointerToRawData值应为0、200、400、600等值。PE装载器发现第一个节区的PointerToRawData（10）不是FileAlignment（200）的整数倍时，它会强制将其识别为整数倍（该情况下为0）。这使UPack文件能够正常运行，但是许多PE相关实用程序都会发生错误。正确的RVA&#x3D;&gt;RAW变换如下</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">RAW = 1018 - 1000 + 0 = 18</span><br><span class="line">PointerToRawData倍识别为0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用Ollydbg查看相应区域的代码，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204225058145.png" alt="image-20211204225058145"></p>
+</li>
+</ul>
+<h5 id="导入表（IMAGE-IMPORT-DESCRIPTOR-array）"><a href="#导入表（IMAGE-IMPORT-DESCRIPTOR-array）" class="headerlink" title="导入表（IMAGE_IMPORT_DESCRIPTOR array）"></a>导入表（IMAGE_IMPORT_DESCRIPTOR array）</h5><ul>
+<li><p>UPack的导入表（Import Table）组织结构相当独特（暗藏玄机）</p>
+</li>
+<li><p>下面使用HEdit查看IMAGE_IMPORT_DESCRIPTOR结构体。首先要从Directory Table中获取IDT（IMAGE_IMPORT_DESCRIPTOR结构体数组）的地址，如下图所示，图中框选的8个字节大小的数据就是指向导入表的IMAGE_IMPORT_DESCRIPTOR结构体。前四个字节为导入表地址（RVA），后面四个字节为导入表的大小（Size）。从图中可知导入表的RVA为F1EE</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204225454371.png" alt="image-20211204225454371"></p>
+</li>
+<li><p>使用HEdit查看之前，需要先进行RVA&#x3D;&gt;RAW变换。首先确定该RVA值属于哪个节区，内存地址F1EE在内存中是第三个节区，参考下图</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204225842802.png" alt="image-20211204225842802"></p>
+</li>
+<li><p>进行RVA&#x3D;&gt;RAW变换，如下所示</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">RAW = RVA(F1EE) - VirtualOffset(F000) + RawOffset(0) = 1EE</span><br><span class="line">这里同样地第三个节区的RawOffset不是10，而是被强制变换为0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用HEdit查看偏移1EE中的数据，如下图所示，该处就是UPack暗藏玄机的地方</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204230434611.png" alt="image-20211204230434611"></p>
+</li>
+<li><p>首先看一下IMAGE_IMPORT_DESCRIPTOR结构体的定义，再继续分析（结构体的大小为20字节）</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_IMPORT_DESCRIPTOR</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">         DWORD   Characteristics; </span><br><span class="line"></span><br><span class="line">         DWORD   OriginalFirstThunk; <span class="comment">// INT(Import Name Table) address (RVA)</span></span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    DWORD   TimeDateStamp;  </span><br><span class="line"></span><br><span class="line">    DWORD   ForwarderChain;</span><br><span class="line"></span><br><span class="line">    DWORD   Name; <span class="comment">// library name string address (RVA) </span></span><br><span class="line"></span><br><span class="line">    DWORD   FirstThunk; <span class="comment">// IAT(Import Address Table) address (RVA)</span></span><br><span class="line"></span><br><span class="line">&#125; IMAGE_IMPORT_DESCRIPTOR;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>根据PE规范，导入表是由一系列IMAGE_IMPORT_DESCRIPTOR结构体组成的数组，最后以一个内容为NULL的结构体结束。</p>
+</li>
+<li><p>文件偏移1EE~201为第一个结构体，其后既不是第二个结构体，也不是（表示导入表结束的）NULL结构体。乍一看这种做法分明是违反PE规范的。但是偏移1FF处为第三个节区的结束，因此文件偏移在200以后的部分不会映射到第三个节区内存。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204232357659.png" alt="image-20211204232357659"></p>
+</li>
+<li><p>第三个节区加载到内存时，文件偏移0～1FF到区域映射到内存的F000～F1FF区域，而（第三个节区其余内存区域）F200～10000区域全部填充为NULL。使用调试器查看相同区域，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204233029629.png" alt="image-20211204233029629"></p>
+</li>
+<li><p>准确地说，只映射到0040F1FF，从0040F200开始全部填充为NULL值。</p>
+</li>
+<li><p>再次返回PE规范的导入表条件，0040F202地址以后出现NULL结构体，这并不算违反PE规范。这就是UPack使用节区的玄机。从文件看导入表好像是损坏了，但是其实它已在内存中准确表现出来。</p>
+</li>
+</ul>
+<h5 id="导入地址表"><a href="#导入地址表" class="headerlink" title="导入地址表"></a>导入地址表</h5><ul>
+<li><p>UPack都输入了哪些DLL中的哪些API呢？下面通过分析IAT查看</p>
+<table>
+<thead>
+<tr>
+<th align="center">偏 移</th>
+<th align="center">成 员</th>
+<th align="center">RVA</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1EE</td>
+<td align="center">OriginalFirstThunk(INT)</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">1FA</td>
+<td align="center">Name</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">1FE</td>
+<td align="center">FirstThunk(IAT)</td>
+<td align="center">11E8</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>首先Name的RVA值为2，它属于Header区域（因为第一个节区是从RVA 1000开始的）</p>
+</li>
+<li><p>Header区域中RVA值与RAW值是一样的，故使用Hex Editor查看文件中偏移（RAW）为2的区域，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204234101448.png" alt="image-20211204234101448"></p>
+</li>
+<li><p>在偏移为2的区域中可以看到字符串KERNEL32.DLL。该位置原本是DOS头部分（IAMGE_DOS_HEADER），属于不使用区域，UPack将ImportDLL名称写入该处。得到DLL名称后，再看一下从中导入了哪些API函数</p>
+</li>
+<li><p>一般而言，跟踪OriginalFirstThunk(INT)能够发现API名称字符串，但是像UPack这样，OriginalFirstThunk(INT)为0时，跟踪FirstThunk(IAT)也是可以的（只要INT、IAT其中一个有API名称字符串即可）。IAT值为11E8，属于第一个节区，故RVA&#x3D;&gt;RAW换算如下</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RAW = RVA(11E8) - VirtualOffset(1000) + RawOffset(0) = 1E8</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用HEdit查看文件偏移1E8，如下图所示，图中高亮部分就是IAT区域，同时也作为INT来使用。也就是说，该处是Name Pointer（RVA）数组，其结束是NULL。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204235022350.png" alt="image-20211204235022350"></p>
+</li>
+<li><p>此外可以看到导入了2个API，分别为RVA 28与BE。RVA位置上存在着导入函数的[ordinal+名称字符串]，由于都是header区域，所以RVA与RAW值是一样的</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204235326466.png" alt="image-20211204235326466"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211204235354500.png" alt="image-20211204235354500"></p>
+</li>
+<li><p>从图中可以看到导入的2个API函数分别为LoadLibrary和GetProcAddress，它们在形成原文件的IAT时非常方便，所以普通压缩器也常常导入使用。</p>
+</li>
+</ul>
+<hr>
+<h3 id="逆向工程核心原理第十九章"><a href="#逆向工程核心原理第十九章" class="headerlink" title="逆向工程核心原理第十九章"></a>逆向工程核心原理第十九章</h3><h4 id="UPack调试-查找OEP"><a href="#UPack调试-查找OEP" class="headerlink" title="UPack调试 - 查找OEP"></a>UPack调试 - 查找OEP</h4><h5 id="使用x64dbg调试"><a href="#使用x64dbg调试" class="headerlink" title="使用x64dbg调试"></a>使用x64dbg调试</h5><ul>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/x64dbg/x64dbg/">x64dbg</a>是类似于Ollydbg的开源调试器，而且由于Ollydbg早已停止更新，所以x64dbg也是Ollydbg的替代品</p>
+</li>
+<li><p>下载最新版<a target="_blank" rel="noopener" href="https://github.com/x64dbg/x64dbg/">x64dbg</a>，因为调试的是32位程序，所以运行时应该选择x86dbg.exe来调试</p>
+</li>
+<li><p>下图为x86dbg运行界面，可以看到软件界面跟Ollydbg非常相似，下面就用x86dbg来调试UPack压缩的abexcm1_upack.exe</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205112358070.png" alt="image-20211205112358070"></p>
+</li>
+</ul>
+<h5 id="EntryPoint"><a href="#EntryPoint" class="headerlink" title="EntryPoint"></a>EntryPoint</h5><ul>
+<li><p>x86dbg默认停住运行的地方不是EntryPoint，但是x86dbg能识别出程序的EntryPoint（UPack的也能正确识别）并设置断点，点击断点选项卡，查看设置的断点</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205112848841.png" alt="image-20211205112848841"></p>
+</li>
+<li><p>从图可以看到x86dbg默认在EP上设置了一个一次性的断点，并且准确识别了UPack的EP &quot;00401018&quot;</p>
+</li>
+<li><p>接着，我们F9让程序运行到EP处，可以看到程序在&quot;00401018&quot;处停下</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205113109965.png" alt="image-20211205113109965"></p>
+</li>
+</ul>
+<h5 id="解码循环"><a href="#解码循环" class="headerlink" title="解码循环"></a>解码循环</h5><ul>
+<li><p>所有压缩器中都存在解码循环（Decoding Loop）。如果明白压缩&#x2F;解压算法本身就是由许多条分支语句和循环构成的，那么就能理解为何解码循环看上去如此复杂。</p>
+</li>
+<li><p>调试这样的循环时，应该适当跳过条件分支语句以跳出某个循环。</p>
+</li>
+<li><p>UPack把压缩后的数据放到第二个节区，再运行解码循环将这些数据解压缩后放到第一个节区。下面从EP代码开始调试，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205114733058.png" alt="image-20211205114733058"></p>
+</li>
+<li><p>前两条指令用于从004011B0处读取4个字节，然后保存到EAX寄存器。EAX拥有的值为&quot;00401000&quot;，它就是原本abexcm1.exe的OEP（lodsd指令，相当于这2句汇编代码mov eax，[esi]，esi&#x3D;esi+4；该指令从esi所指的地址处读取4字节储存到EAX寄存器）。这里可以直接设置硬件断点，然后F9运行，程序就会在OEP处暂停。</p>
+</li>
+<li><p>我们的目标时提高调试水平，所以这里继续调试，经过一阵调试后，会出现如下图所示的函数调用代码</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205170248915.png" alt="image-20211205170248915"></p>
+</li>
+<li><p>此时ESI的值为00407443，该地址就是decode()函数的地址，后面会反复调用执行该函数。F7跟进查看该函数代码</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205170523733.png" alt="image-20211205170523733"></p>
+</li>
+<li><p>仅从这部分来看，还搞不清楚这段代码的用途。继续调试遇到如下图所示的代码</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205172256256.png" alt="image-20211205172256256"></p>
+</li>
+<li><p>004075CF与004075D5地址处有&quot;向EDI所指位置写入内容&quot;的指令。此时EDI值指向第一个节区中的地址。也就是说，这些命令会先执行解压缩操作，然后写入实际内存。在004075D6处与004075D9地址处通过CMP&#x2F;JB指令继续执行循环，直到EDI值为0040604C（[ESI+34]&#x3D;0040604C）</p>
+</li>
+</ul>
+<h5 id="设置IAT"><a href="#设置IAT" class="headerlink" title="设置IAT"></a>设置IAT</h5><ul>
+<li><p>一般而言，压缩器执行完解码循环后会根据原文件重新组织IAT。UPack也有类似的过程，如下图所示，UPack会使用导入的2个函数（LoadLibrary和GetProcAddress），边执行循环边构建原abexcm1.exe的IAT（先获取abexcm1.exe导入函数的实际内存地址，再写入原IAT区域）。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205173322197.png" alt="image-20211205173322197"></p>
+</li>
+<li><p>该过程结束后，由00407627地址处的RETN命令将运行转到OEP处，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/image-20211205173733473.png" alt="image-20211205173733473"></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/" rel="prev" title="《逆向工程核心原理》学习笔记9">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记9
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/" rel="next" title="《逆向工程核心原理》学习笔记11">
+      《逆向工程核心原理》学习笔记11 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%8D%81%E5%85%AB%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第十八章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#UPack-PE%E6%96%87%E4%BB%B6%E5%A4%B4%E5%88%86%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text">UPack PE文件头分析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8UPack%E5%8E%8B%E7%BC%A9abexcm1-exe"><span class="nav-number">1.1.1.</span> <span class="nav-text">使用UPack压缩abexcm1.exe</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Stud-PE%E5%B7%A5%E5%85%B7"><span class="nav-number">1.1.2.</span> <span class="nav-text">使用Stud_PE工具</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%AF%94%E8%BE%83PE%E6%96%87%E4%BB%B6%E5%A4%B4"><span class="nav-number">1.1.3.</span> <span class="nav-text">比较PE文件头</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E6%9E%90UPack%E7%9A%84PE%E6%96%87%E4%BB%B6%E5%A4%B4"><span class="nav-number">1.2.</span> <span class="nav-text">分析UPack的PE文件头</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%87%8D%E5%8F%A0%E6%96%87%E4%BB%B6%E5%A4%B4"><span class="nav-number">1.2.1.</span> <span class="nav-text">重叠文件头</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#IMAGE-FILE-HEADER-SizeOfOptionalHeader"><span class="nav-number">1.2.2.</span> <span class="nav-text">IMAGE_FILE_HEADER.SizeOfOptionalHeader</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#IMAGE-OPTIONAL-HEADER-NumberOfRvaAndSizes"><span class="nav-number">1.2.3.</span> <span class="nav-text">IMAGE_OPTIONAL_HEADER.NumberOfRvaAndSizes</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#IMAGE-SECTION-HEADER"><span class="nav-number">1.2.4.</span> <span class="nav-text">IMAGE_SECTION_HEADER</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%87%8D%E5%8F%A0%E8%8A%82%E5%8C%BA"><span class="nav-number">1.2.5.</span> <span class="nav-text">重叠节区</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#RVA-to-RAW"><span class="nav-number">1.2.6.</span> <span class="nav-text">RVA to RAW</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AF%BC%E5%85%A5%E8%A1%A8%EF%BC%88IMAGE-IMPORT-DESCRIPTOR-array%EF%BC%89"><span class="nav-number">1.2.7.</span> <span class="nav-text">导入表（IMAGE_IMPORT_DESCRIPTOR array）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AF%BC%E5%85%A5%E5%9C%B0%E5%9D%80%E8%A1%A8"><span class="nav-number">1.2.8.</span> <span class="nav-text">导入地址表</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%8D%81%E4%B9%9D%E7%AB%A0"><span class="nav-number">2.</span> <span class="nav-text">逆向工程核心原理第十九章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#UPack%E8%B0%83%E8%AF%95-%E6%9F%A5%E6%89%BEOEP"><span class="nav-number">2.1.</span> <span class="nav-text">UPack调试 - 查找OEP</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8x64dbg%E8%B0%83%E8%AF%95"><span class="nav-number">2.1.1.</span> <span class="nav-text">使用x64dbg调试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#EntryPoint"><span class="nav-number">2.1.2.</span> <span class="nav-text">EntryPoint</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%A3%E7%A0%81%E5%BE%AA%E7%8E%AF"><span class="nav-number">2.1.3.</span> <span class="nav-text">解码循环</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEIAT"><span class="nav-number">2.1.4.</span> <span class="nav-text">设置IAT</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : 'ac8ccc9fb7cab9e3a3d15430dcdb7f7b',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

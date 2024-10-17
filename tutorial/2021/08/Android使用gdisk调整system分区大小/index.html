@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言 最近尝试给谷歌nexus 5编译HavocOS （android 11分支），折腾一大堆后终于生成了zip刷机包，结果死活刷不进去，卡在&quot;E1001: Failed to update system image&quot;，原因推测是：system分区太小，因为编译时报错提示system镜像过小，所以在编译配置文件中BoardConfig.mk调整过system分区的大小，修改后才">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android使用gdisk调整system分区大小">
+<meta property="og:url" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="前言 最近尝试给谷歌nexus 5编译HavocOS （android 11分支），折腾一大堆后终于生成了zip刷机包，结果死活刷不进去，卡在&quot;E1001: Failed to update system image&quot;，原因推测是：system分区太小，因为编译时报错提示system镜像过小，所以在编译配置文件中BoardConfig.mk调整过system分区的大小，修改后才">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804164621667.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804165043465.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804165518769.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804170455330.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804170626103.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804170958139.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171254615.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171517220.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171742985.png">
+<meta property="article:published_time" content="2021-08-04T08:16:00.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:10.228Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="教程">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="android">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804164621667.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Android使用gdisk调整system分区大小 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Android使用gdisk调整system分区大小
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-08-04 16:16:00" itemprop="dateCreated datePublished" datetime="2021-08-04T16:16:00+08:00">2021-08-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:10" itemprop="dateModified" datetime="2024-10-16T13:19:10+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
+<li>最近尝试给谷歌nexus 5编译HavocOS （android 11分支），折腾一大堆后终于生成了zip刷机包，结果死活刷不进去，卡在&quot;E1001: Failed to update system image&quot;，原因推测是：system分区太小，因为编译时报错提示system镜像过小，所以在编译配置文件中BoardConfig.mk调整过system分区的大小，修改后才编译打包成功。</li>
+<li>显然只改BoardConfig.mk，只是能正常编译打包，但是手机（物理）上的system分区还是那么大，太大刷不进去</li>
+<li>为了验证是否是system分区太小缘故，因为编译还生成了system.img的中间文件，这个img是可以用fastboot刷入的，手机usb连接到电脑，进入bootloader模式，运行<code>fastboot system system.img</code>，不出意外失败了，而且报错信息为：&quot;remote: &#39;size too large&#39;&quot;，这就验证了是手机&#x2F;system分区不够大的原因。所以问题就变为了怎么扩增system分区？</li>
+<li>经过网上查找相关教程，最终按这个问题里的答案：<a target="_blank" rel="noopener" href="https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition">https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition</a>尝试成功</li>
+</ul>
+<h2 id="准备阶段"><a href="#准备阶段" class="headerlink" title="准备阶段"></a>准备阶段</h2><ul>
+<li>需要手机解锁bootloader并刷入twrp recovery</li>
+<li>下载gdisk等工具<a href="parted_gdisk_fdisk_mkfs.ext4-ARM.zip">parted_gdisk_fdisk_mkfs.ext4-ARM.zip</a>，<a href="parted_gdisk_fdisk_mkfs.ext4-AARCH64.zip">parted_gdisk_fdisk_mkfs.ext4-AARCH64.zip</a>（根据手机CPU架构选择，一般多为arm）</li>
+<li>PC需要先安装好adb</li>
+<li><strong>如果手机上有重要数据请先备份</strong></li>
+<li><strong>操作有风险，请谨慎操作，请自行承担风险</strong></li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>手机进入recovery模式</p>
+</li>
+<li><p>下载解压gdisk，电脑usb连接手机，adb push将gdisk传至手机</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">adb push gdisk /sbin/</span><br><span class="line">adb push mkfs.ext4 /sbin/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>运行</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adb shell</span><br></pre></td></tr></table></figure>
+
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">给 gdisk mkfs.ext4赋予可执行权限</span></span><br><span class="line">chmod +x /sbin/*</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>twrp中选择挂载&#x2F;system分区，终端运行<code>df -h</code></p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804164621667.png" alt="image-20210804164621667"></p>
+</li>
+<li><p>可以看到system分区对应的区块为&quot;&#x2F;dev&#x2F;block&#x2F;platform&#x2F;msm_sdcc.1&#x2F;by-name&#x2F;system&quot;，userdata分区对应的区块为&quot;&#x2F;dev&#x2F;block&#x2F;platform&#x2F;msm_sdcc.1&#x2F;by-name&#x2F;userdata&quot;，但这个by-name说明是软连接，我们需要获得它真实的区块位置，运行<code>ls -lah /dev/block/platform/msm_sdcc.1/by-name/system</code>和<code>ls -lah /dev/block/platform/msm_sdcc.1/by-name/userdata</code>即可获得</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804165043465.png" alt="image-20210804165043465"></p>
+</li>
+<li><p>可以看到&#x2F;system分区对应的为&quot;&#x2F;dev&#x2F;block&#x2F;mmcblk0p25&quot;，&#x2F;data分区对应的为&quot;&#x2F;dev&#x2F;block&#x2F;mmcblk0p28&quot;，记下这两个值，后面需要使用，不同手机这两个可能跟本文不一样，要以实际情况为准</p>
+</li>
+<li><p>运行<code>gdisk /dev/block/mmcblk0</code>，注意这里没有&quot;p25&quot;，&quot;p28&quot;，&quot;p*&quot;</p>
+</li>
+<li><p>输入help可以查看帮助<img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804165518769.png" alt="image-20210804165518769"></p>
+</li>
+<li><p>这里因为要扩增system分区，所以最好的办法是从减小userdata分区的大小来实现</p>
+</li>
+<li><p>直接调整已有分区大小（增加或者减小），需要下载工具里<strong>parted</strong>命令（使用方法最开始的链接有，这里没有使用parted，因为使用parted比较繁琐），这里不打算直接调整userdata分区大小，而是将userdata分区和system分区都删除掉，再重新分区</p>
+</li>
+<li><p>gdisk删除分区</p>
+</li>
+<li><p>先输入<code>d</code>，回车后输入需要删除的分区这里需要删除的为system(25)和userdata(28)，这两个数值即为mmcblk0p25和mmcblk0p28里的数字</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804170455330.png" alt="image-20210804170455330"></p>
+</li>
+<li><p>删除后新建分区，输入<code>n</code>，然后输入原system分区数字，接着会提示选择分区起始扇区位置，回车默认即可，接着会提示选择分区终止扇区位置，这里选择**&quot;+2G&quot;**，表示分配2GB空间，之后回车默认即可</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804170626103.png" alt="image-20210804170626103"></p>
+</li>
+<li><p>再输入<code>n</code>，输入原userdata分区数字，接着会提示选择分区起始扇区位置，回车默认即可，接着会提示选择分区终止扇区位置，<strong>这里可以直接回车使用默认即可</strong>（这里不使用+*G的原因是，让剩余未分配空间都尽可能利用），然后一路回车即可</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804170958139.png" alt="image-20210804170958139"></p>
+</li>
+<li><p>接下来输入<code>c</code>，来重命名新增加的两个分区，选择原system分区的数字，输入名字system，同样的将另一个分区命名为userdata</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171254615.png" alt="image-20210804171254615"></p>
+</li>
+<li><p>输入<code>p</code>，查看所有分区信息，检查分区大小和分区名称是否正确，如下图可以看到25对应分区大小为2GB名称为system，28对应的分区大小为25.2GB名称为userdata，说明修改没有问题</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171517220.png" alt="image-20210804171517220"></p>
+</li>
+<li><p>接着保存分区的改动，输入：<strong>w</strong>，按提示选择y即可</p>
+<p>  <img src="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/image-20210804171742985.png" alt="image-20210804171742985"></p>
+</li>
+<li><p>最后格式化system分区和userdata分区为ext4</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将mmc0blk0p25修改为实际system分区所在分块</span></span><br><span class="line">mkfs.ext4 /dev/block/mmc0blk0p25</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将mmc0blk0p25修改为实际userdata分区所在分块</span></span><br><span class="line">mkfs.ext4 /dev/block/mmc0blk0p28</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>至此&#x2F;system分区大小调整完毕，可以用twrp正常刷入编译的rom包了</p>
+</li>
+</ul>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition">https://android.stackexchange.com/questions/216123/android-how-to-increase-system-partition-and-decrease-data-partition</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://forum.xda-developers.com/t/how-to-boot-from-sd-card-successfully-on-qmobile-z8-with-bricked-dead-emmc.3712171/">[HOW TO] BOOT FROM SD CARD [SUCCESSFULLY] on QMobile Z8 with BRICKED&#x2F;DEAD eMMC</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/Sunzz/p/6908329.html">gdisk用法</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%99%E7%A8%8B/" rel="tag"># 教程</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/android/" rel="tag"># android</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/07/Docker%E5%AE%B9%E5%99%A8%E7%BC%96%E8%AF%91LineageOS%E7%AC%94%E8%AE%B0/" rel="prev" title="Docker容器编译LineageOS笔记">
+      <i class="fa fa-chevron-left"></i> Docker容器编译LineageOS笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/" rel="next" title="《逆向工程核心原理》学习笔记1">
+      《逆向工程核心原理》学习笔记1 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5"><span class="nav-number">2.</span> <span class="nav-text">准备阶段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">3.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="nav-number">4.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '8ade5442b5cda63c6961db413f2feb14',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

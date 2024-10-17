@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第十四章运行时压缩 运行时压缩器（Run-TimePacker）是软件逆向分析学的常见主题。为了理解好它，需要掌握有关PE文件格式、操作系统的基本知识（进程、内存、DLLL等），同时也要了解有关压缩&#x2F;解压缩算法的基本内容。  数据压缩 计算机中文件（数据）都是由二进制（0或1）组成的，只要使用合适的压缩算法，就能缩减其大小。经过压缩的文件若能100%恢复，则称该压缩为&amp;q">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记8">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第十四章运行时压缩 运行时压缩器（Run-TimePacker）是软件逆向分析学的常见主题。为了理解好它，需要掌握有关PE文件格式、操作系统的基本知识（进程、内存、DLLL等），同时也要了解有关压缩&#x2F;解压缩算法的基本内容。  数据压缩 计算机中文件（数据）都是由二进制（0或1）组成的，只要使用合适的压缩算法，就能缩减其大小。经过压缩的文件若能100%恢复，则称该压缩为&amp;q">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201172402003.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201181531561.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201181743885.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202154618660.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202155000431.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202195945064.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202202338099.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202201356737.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202202130380.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202202541268.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202203827648.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202205233698.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202205604651.png">
+<meta property="article:published_time" content="2021-12-01T04:27:19.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:16.799Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201172402003.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记8 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记8
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-01 12:27:19" itemprop="dateCreated datePublished" datetime="2021-12-01T12:27:19+08:00">2021-12-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:16" itemprop="dateModified" datetime="2024-10-16T13:19:16+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第十四章"><a href="#逆向工程核心原理第十四章" class="headerlink" title="逆向工程核心原理第十四章"></a>逆向工程核心原理第十四章</h3><h4 id="运行时压缩"><a href="#运行时压缩" class="headerlink" title="运行时压缩"></a>运行时压缩</h4><ul>
+<li>运行时压缩器（Run-TimePacker）是软件逆向分析学的常见主题。为了理解好它，需要掌握有关PE文件格式、操作系统的基本知识（进程、内存、DLLL等），同时也要了解有关压缩&#x2F;解压缩算法的基本内容。</li>
+</ul>
+<h4 id="数据压缩"><a href="#数据压缩" class="headerlink" title="数据压缩"></a>数据压缩</h4><ul>
+<li>计算机中文件（数据）都是由二进制（0或1）组成的，只要使用合适的压缩算法，就能缩减其大小。经过压缩的文件若能100%恢复，则称该压缩为&quot;无损压缩&quot;(Lossless Data Compression)；若不能恢复原状，则称该压缩为&quot;有损压缩&quot;(Loss Data Compression)。</li>
+</ul>
+<span id="more"></span>
+
+<h5 id="无损压缩"><a href="#无损压缩" class="headerlink" title="无损压缩"></a>无损压缩</h5><ul>
+<li>最具代表性的无损压缩算法有Run-Length、Lempel-Ziv、Huffman等，此外还有许多其他算法，它们都是在上面3种压缩算法等基础上改造而成的。只要准确理解了上面3种，就能轻松掌握其他各种压缩算法。</li>
+</ul>
+<h5 id="有损压缩"><a href="#有损压缩" class="headerlink" title="有损压缩"></a>有损压缩</h5><ul>
+<li>有损压缩允许压缩文件（数据）时损失一定信息，以换取高压缩率。压缩多媒体文件（jpg、mp3、mp4）时，大部分都使用这种有损压缩方式。从压缩特性来看，有损压缩的数据解压后不能完全恢复原始数据。人的肉眼与听觉几乎无法察觉到这些多媒体文件在压缩中损失的数据。</li>
+</ul>
+<h5 id="运行时压缩器"><a href="#运行时压缩器" class="headerlink" title="运行时压缩器"></a>运行时压缩器</h5><ul>
+<li><p>运行时压缩器是针对PE（Protable Executable）文件而言的，可执行文件内部含有解压缩代码，文件在运行瞬间于内存中解压缩后执行。</p>
+</li>
+<li><p>运行时压缩文件也是PE文件，内部含有原PE文件与解码程序。在程序的EP代码中执行解码程序，同时在内存中解压缩后执行。下表为运行时压缩与普通zip压缩的不同点。</p>
+<table>
+<thead>
+<tr>
+<th align="center">项 目</th>
+<th align="center">普通压缩</th>
+<th align="center">运行时压缩</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">对象文件</td>
+<td align="center">所有文件</td>
+<td align="center">PE文件（exe、dll、sys）</td>
+</tr>
+<tr>
+<td align="center">压缩结果</td>
+<td align="center">压缩文件（.zip、.rar等）</td>
+<td align="center">PE文件（exe、dll、sys）</td>
+</tr>
+<tr>
+<td align="center">解压缩方式</td>
+<td align="center">使用专门解压缩程序</td>
+<td align="center">内部含有解码程序</td>
+</tr>
+<tr>
+<td align="center">文件是否可执行</td>
+<td align="center">本身不可执行</td>
+<td align="center">本身可执行</td>
+</tr>
+<tr>
+<td align="center">优点</td>
+<td align="center">可以对所有文件高压缩率压缩</td>
+<td align="center">无须专门解压程序便可直接运行</td>
+</tr>
+<tr>
+<td align="center">缺点</td>
+<td align="center">若无专门解压缩软件则无法使用压缩文件</td>
+<td align="center">每次运行均需调用解码程序导致运行时间过长</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>把普通PE文件创建成运行时压缩文件的使用程序称为&quot;压缩器&quot;（Packer），经过反逆向（Anti-Reversing）技术特别处理的压缩器称为保护器（Protector）。</p>
+</li>
+</ul>
+<h5 id="压缩器"><a href="#压缩器" class="headerlink" title="压缩器"></a>压缩器</h5><ul>
+<li>使用目的：缩减PE文件大小、隐藏PE文件内部代码与资源</li>
+<li>压缩器种类：大致分为两类：一类是单纯用于压缩普通PE文件的压缩器，常见有：UPX、ASPack等；另一类是对源文件进行较大变形、严重破坏PE头、意图不纯的压缩器（专门用于恶意程序），常见有UPack、PESpin、NSAnti等。</li>
+</ul>
+<h5 id="保护器"><a href="#保护器" class="headerlink" title="保护器"></a>保护器</h5><ul>
+<li>使用目的：防止破解，没人愿意自己编写的程序被非法破解使用，此时使用保护器可有效保护PE文件；保护代码与资源，保护器不仅可以保护PE文件本身，还可以在文件运行时，保护进程内存，防止打开Dump窗口。因此，使用保护器可以比较安全地保护程序自身的代码与资源。</li>
+<li>保护器种类：有商业程序和公用程序，商业保护器：ASProtect、Themida、SVKP等；公用保护器：UltraProtect、Morphine等。</li>
+</ul>
+<h4 id="运行时压缩测试"><a href="#运行时压缩测试" class="headerlink" title="运行时压缩测试"></a>运行时压缩测试</h4><ul>
+<li><p>下面以前面用到的abexcm1.exe为例进行运行时压缩测试。</p>
+</li>
+<li><p>测试使用的压缩器为UPX：<a target="_blank" rel="noopener" href="https://github.com/upx/upx">https://github.com/upx/upx</a>，下载后在cmd中运行<code>upx.exe -o abexcm1_upx.exe abexcm1.exe</code>即可</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201172402003.png" alt="image-20211201172402003"></p>
+</li>
+<li><p>从运行结果的输出可以看到，文件大小从8192变为了6656，压缩率为81.25%。</p>
+</li>
+</ul>
+<h5 id="比较abexcm1-exe和abexcm1-upx-exe"><a href="#比较abexcm1-exe和abexcm1-upx-exe" class="headerlink" title="比较abexcm1.exe和abexcm1_upx.exe"></a>比较abexcm1.exe和abexcm1_upx.exe</h5><ul>
+<li><p>下图是从PE文件视觉比较两个文件的示意图，很好地反映了UPX压缩器的特点</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201181531561.png" alt="image-20211201181531561"></p>
+</li>
+<li><p>abexcm1.exe与abexcm1_upx.exe比较项目</p>
+<ul>
+<li>PE头大小一样（0~400h）</li>
+<li>节区名称和数量改变</li>
+<li>abexcm1_upx.exe第一个节区的RawDataSize&#x3D;0（文件中的大小为0）</li>
+<li>abexcm1_upx.exe的EP位于第二个节区（原文件的EP在第一个节区）</li>
+<li>资源节区（.rsrc）大小几乎无变化</li>
+</ul>
+</li>
+<li><p>需要注意的是abexcm1_upx.exe第一个节区(UPX0)的RawDataSize为0，即第一个节区在磁盘文件中是不存在的，用PEView查看该节区头，可以看到VirtualSize为&quot;00006000&quot;，这是为abexcm1_upx.exe运行时解压预留的空间。也就是说，程序运行时将（文件中的）压缩的代码解压到（内存中的）第一个节区，更详细点来说，解压缩代码与被压缩的代码都在第二个节区。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211201181743885.png" alt="image-20211201181743885"></p>
+</li>
+</ul>
+<hr>
+<h3 id="逆向工程核心原理第十五章"><a href="#逆向工程核心原理第十五章" class="headerlink" title="逆向工程核心原理第十五章"></a>逆向工程核心原理第十五章</h3><h4 id="调试UPX压缩的abexcm1程序"><a href="#调试UPX压缩的abexcm1程序" class="headerlink" title="调试UPX压缩的abexcm1程序"></a>调试UPX压缩的abexcm1程序</h4><h5 id="abexcm1-exe的EP代码"><a href="#abexcm1-exe的EP代码" class="headerlink" title="abexcm1.exe的EP代码"></a>abexcm1.exe的EP代码</h5><ul>
+<li><p>先用Ollydbg查看原abexcm1.exe的EP代码，如下图所示，可以看到代码量很少，因为这是汇编编写的程序</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202154618660.png" alt="image-20211202154618660"></p>
+</li>
+</ul>
+<h5 id="abexcm1-upx-exe的EP代码"><a href="#abexcm1-upx-exe的EP代码" class="headerlink" title="abexcm1_upx.exe的EP代码"></a>abexcm1_upx.exe的EP代码</h5><ul>
+<li><p>再用Ollydbg打开abexcm1_upx.exe，查看相应的EP代码，如下图所示，可以看到代码发生了明显变化</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202155000431.png" alt="image-20211202155000431"></p>
+</li>
+<li><p>EP地址为&quot;004071B0&quot;，该处即为第二个节区&quot;UPX1&quot;的末端部分。实际压缩的abexcm1.exe代码存在于EP地址&quot;004071B0&quot;上方。</p>
+</li>
+<li><p>下面查看代码开始的部分（&quot;004071B0&quot;）</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">004071B0 &gt; $  60            pushad</span><br><span class="line">004071B1   .  BE 00704000   mov esi,abexcm1_.00407000</span><br><span class="line">004071B6   .  8DBE 00A0FFFF lea edi,dword ptr ds:[esi-0x6000]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>首先使用PUSHAD命令将寄存器EAX~EDI的值保存到栈，然后分别把第二个节区的起始地址&quot;00407000&quot;与第一个节区地址&quot;00401000&quot;设置到ESI和EDI寄存器。UPX文件的第一个节区仅存在于内存，该处即是解压缩后保存源文件代码的地方。</p>
+</li>
+<li><p>调试时，遇到这样同时设置ESI与EDI，就能预见从ESI所指缓冲区到EDI所指缓冲区到内存发生了复制。此时从Source（ESI）读取数据，解压缩后保存到Destination（EDI）。我们的目标是跟踪全部UPX EP代码，并最终找到原abexcm1的EP代码。</p>
+</li>
+</ul>
+<h5 id="跟踪UPX文件"><a href="#跟踪UPX文件" class="headerlink" title="跟踪UPX文件"></a>跟踪UPX文件</h5><ul>
+<li><p>下面开始跟踪代码，跟踪数量庞大的代码时，请遵循如下法则：&quot;遇到循环时，先了解作用再跳出&quot;</p>
+</li>
+<li><p>Ollydbg的跟踪命令：跟踪数量庞大的代码时，通常不会使用Step Into(F7)命令，而使用Ollydbg中另外提供的跟踪调试命令，如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th align="center">命 令</th>
+<th align="center">快捷键</th>
+<th align="center">说 明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">自动步入</td>
+<td align="center">Ctrl+F7</td>
+<td align="center">自动执行StepInto命令（画面显示）</td>
+</tr>
+<tr>
+<td align="center">自动步过</td>
+<td align="center">Ctrl+F8</td>
+<td align="center">自动执行StepOver命令（画面显示）</td>
+</tr>
+<tr>
+<td align="center">跟踪步入</td>
+<td align="center">Ctrl+F11</td>
+<td align="center">自动执行StepInto命令（画面不显示）</td>
+</tr>
+<tr>
+<td align="center">跟踪步过</td>
+<td align="center">Ctrl+F12</td>
+<td align="center">自动执行StepOver命令（画面不显示）</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>除了画面显示之外，自动命令与跟踪命令是类似的，由于自动命令要把跟踪过程显示在画面中，所以执行速度略微慢一些。两者最大差别在于，跟踪命令会自动在事先设置的跟踪条件处停下来，并生成日志文件。</p>
+</li>
+</ul>
+<h5 id="循环-1"><a href="#循环-1" class="headerlink" title="循环#1"></a>循环#1</h5><ul>
+<li><p>开始跟踪代码不久后，会遇到一个短循环。暂停跟踪，仔细查看相应循环如下所示</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">004071BD   . /EB 0B         jmp short abexcm1_.004071CA</span><br><span class="line">004071BF     |90            nop</span><br><span class="line">004071C0   &gt; |8A06          mov al,byte ptr ds:[esi]</span><br><span class="line">004071C2   . |46            inc esi                                  ;  abexcm1_.00407004</span><br><span class="line">004071C3   . |8807          mov byte ptr ds:[edi],al</span><br><span class="line">004071C5   . |47            inc edi                                  ;  abexcm1_.00401000</span><br><span class="line">004071C6   &gt; |01DB          add ebx,ebx</span><br><span class="line">004071C8   . |75 07         jnz short abexcm1_.004071D1</span><br><span class="line">004071CA   &gt; \8B1E          mov ebx,dword ptr ds:[esi]</span><br><span class="line">004071CC   .  83EE FC       sub esi,-0x4</span><br><span class="line">004071CF      11DB          adc ebx,ebx</span><br><span class="line">004071D1    ^ 72 ED         jb short abexcm1_.004071C0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>循环开始前先从读取ESI&quot;00407000&quot;地址处的值并复制给EBX寄存器，然后将ESI寄存器的值减去-0x4（加0x4）得到新值&quot;00407004&quot;，再执行<code>adc ebx ebx</code>&#x3D;&gt;&quot;操作对象1 &#x3D; 操作对象1 + 操作对象2 + CF&quot;，<code>jb short abexcm1_.004071C0</code>然后判断CF是否等于&quot;1&quot;，是则跳转。然后进入&quot;004071C0&quot;开始循环，循环内容为从ESI(&quot;00407004&quot;)中读取一个字节写入EDI(&quot;00401000&quot;)中，然后分别增加ESI和EDI的值，在让EBX加上自己，直到执行<code>add ebx, ebx</code>指令无溢出时即CF&#x3D;0循环终止。</p>
+</li>
+<li><p>调试遇到这样的循环应该跳出来，在&quot;004071D3&quot;地址处下断点，F9跳出循环</p>
+</li>
+</ul>
+<h5 id="循环-2"><a href="#循环-2" class="headerlink" title="循环#2"></a>循环#2</h5><ul>
+<li><p>在断点处再次使用自动步过（Ctrl+F8）命令继续跟踪代码，不久后遇到下图所示的循环，（比之前的循环要大，包含了第一个循环的代码），这个循环是正式解码循环（解压缩循环），不断从ESI所指的第二个节区（UPX1）地址中依次读取值，经过适当的运算解压后，将值写入EDI所指的第一个节区（UPX0）。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202195945064.png" alt="image-20211202195945064"></p>
+</li>
+<li><p>在&quot;0040727A&quot;处设置断点可跳过第二个循环，运行到&quot;0040727A&quot;时，左下角数据窗口Ctrl+G跳转至&quot;00401000&quot;地址，可以看到相应的代码已经解压第一个节区（UPX0）了，原来都是NULL填充的</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202202338099.png" alt="image-20211202202338099"></p>
+</li>
+</ul>
+<h5 id="循环-3"><a href="#循环-3" class="headerlink" title="循环#3"></a>循环#3</h5><ul>
+<li><p>重新跟踪代码，稍后会遇到如下图所示的第三个循环</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202201356737.png" alt="image-20211202201356737"></p>
+</li>
+<li><p>这部分代码用于恢复源代码的CALL&#x2F;JMP指令（操作码：E8&#x2F;E9）的目标地址。在&quot;004072AE处&quot;下断点运行后可以跳出该循环。到此接近尾声了，只要再设置好IAT，UPX解压缩代码就结束了。</p>
+</li>
+</ul>
+<h5 id="循环-4"><a href="#循环-4" class="headerlink" title="循环#4"></a>循环#4</h5><ul>
+<li><p>重新跟踪代码，再稍微进行一段，遇到第四个循环，该循环即为设置IAT的循环。在地址&quot;004072AE&quot;处设置EDI&#x3D;00406000，它指向第二个节区（UPX1）区域，该区域保存着原abexcm1.exe调用的API函数名称的字符串。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202202130380.png" alt="image-20211202202130380"><br>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202202541268.png" alt="image-20211202202541268"></p>
+</li>
+<li><p>UPX压缩原abexcm1.exe文件时，它会分析其IAT，提取出程序中调用的API名称列表，形成API名称字符串。利用这些API名称字符串调用&quot;004072DF&quot;处的GetProcAddress()函数，获取API的起始地址，然后把API地址输入EBX寄存器所指的原abexcm1.exe的IAT区域。这个过程会反复执行，直到恢复所有原abexcm1.exe的IAT。</p>
+</li>
+<li><p>abexcm1.exe全部解压缩完成后，应该将程序的控制返回到OEP处，下图显示的就是跳转到OEP的代码。另外&quot;00407325&quot;处的POPAD命令与UPX代码的第一条PUSHAD命令对应，用来把当前寄存器恢复原状。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202203827648.png" alt="image-20211202203827648"></p>
+</li>
+</ul>
+<h5 id="快速查找UPX-OEP的方法"><a href="#快速查找UPX-OEP的方法" class="headerlink" title="快速查找UPX OEP的方法"></a>快速查找UPX OEP的方法</h5><ul>
+<li><p>在POPAD指令后的JMP指令处设置断点：UPX压缩器的特征之一是，其EP代码被包含在PUSHAD&#x2F;POPAD之间。并且，跳转到OEP代码的JMP指令紧接着出现在POPAD指令之后。只要在JMP指令处设置好断点，运行就能直接找到OEP了。</p>
+<blockquote>
+<p>PUSHAD：将8个通用寄存器（EAX～EDX）的值保存到栈</p>
+<p>POPAD：把PUSHAD命令储存在栈的值再次恢复到各个寄存器</p>
+</blockquote>
+</li>
+</ul>
+<h5 id="在栈中设置硬件断点"><a href="#在栈中设置硬件断点" class="headerlink" title="在栈中设置硬件断点"></a>在栈中设置硬件断点</h5><ul>
+<li><p>这个方法同样利用UPX的PUSHAD&#x2F;POPAD指令的特点。在执行&quot;004071B0&quot;地址处的PUSHAD命令后，查看栈</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202205233698.png" alt="image-20211202205233698"></p>
+</li>
+<li><p>EAX到EDX寄存器的值依次被储存到栈。从Ollydbg的Dump窗口进入栈地址&quot;0019FF54&quot;，将光标定位到19FF54地址，右键按下图所示设置硬件断点</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/image-20211202205604651.png" alt="image-20211202205604651"></p>
+</li>
+<li><p>硬件断点是CPU支持的断点，最多可以设置4个。与普通断点不同的是，硬件断点的指令执行完成后才暂停调试。在这种状态下，程序会边解压缩边执行代码，在执行到POPAD的瞬间访问设置有硬件断点的0019FF54地址，然后暂停调试。其下方即是跳转至OEP的JMP指令。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/" rel="prev" title="《逆向工程核心原理》学习笔记7">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记7
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/" rel="next" title="《逆向工程核心原理》学习笔记9">
+      《逆向工程核心原理》学习笔记9 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%8D%81%E5%9B%9B%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第十四章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.1.</span> <span class="nav-text">运行时压缩</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.2.</span> <span class="nav-text">数据压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%97%A0%E6%8D%9F%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.2.1.</span> <span class="nav-text">无损压缩</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%89%E6%8D%9F%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.2.2.</span> <span class="nav-text">有损压缩</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8E%8B%E7%BC%A9%E5%99%A8"><span class="nav-number">1.2.3.</span> <span class="nav-text">运行时压缩器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9%E5%99%A8"><span class="nav-number">1.2.4.</span> <span class="nav-text">压缩器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BF%9D%E6%8A%A4%E5%99%A8"><span class="nav-number">1.2.5.</span> <span class="nav-text">保护器</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8E%8B%E7%BC%A9%E6%B5%8B%E8%AF%95"><span class="nav-number">1.3.</span> <span class="nav-text">运行时压缩测试</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%AF%94%E8%BE%83abexcm1-exe%E5%92%8Cabexcm1-upx-exe"><span class="nav-number">1.3.1.</span> <span class="nav-text">比较abexcm1.exe和abexcm1_upx.exe</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%8D%81%E4%BA%94%E7%AB%A0"><span class="nav-number">2.</span> <span class="nav-text">逆向工程核心原理第十五章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B0%83%E8%AF%95UPX%E5%8E%8B%E7%BC%A9%E7%9A%84abexcm1%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.1.</span> <span class="nav-text">调试UPX压缩的abexcm1程序</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#abexcm1-exe%E7%9A%84EP%E4%BB%A3%E7%A0%81"><span class="nav-number">2.1.1.</span> <span class="nav-text">abexcm1.exe的EP代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#abexcm1-upx-exe%E7%9A%84EP%E4%BB%A3%E7%A0%81"><span class="nav-number">2.1.2.</span> <span class="nav-text">abexcm1_upx.exe的EP代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%9F%E8%B8%AAUPX%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.3.</span> <span class="nav-text">跟踪UPX文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF-1"><span class="nav-number">2.1.4.</span> <span class="nav-text">循环#1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF-2"><span class="nav-number">2.1.5.</span> <span class="nav-text">循环#2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF-3"><span class="nav-number">2.1.6.</span> <span class="nav-text">循环#3</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF-4"><span class="nav-number">2.1.7.</span> <span class="nav-text">循环#4</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BEUPX-OEP%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">2.1.8.</span> <span class="nav-text">快速查找UPX OEP的方法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9C%A8%E6%A0%88%E4%B8%AD%E8%AE%BE%E7%BD%AE%E7%A1%AC%E4%BB%B6%E6%96%AD%E7%82%B9"><span class="nav-number">2.1.9.</span> <span class="nav-text">在栈中设置硬件断点</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : 'ca3ce242c480f28bbb4e8efb486109b8',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

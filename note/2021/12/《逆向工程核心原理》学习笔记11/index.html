@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第二十章&quot;内嵌补丁&quot;练习 &quot;内嵌补丁&quot;是&quot;内嵌代码补丁&quot;（Inline Code Patch）的简称，难以直接修改指定代码时，插入并运行被称为&quot;洞穴代码&quot;（Code Cave）的补丁代码后，对程序打补丁。常用于运行时压缩（或加密处理）而难以直接修改的情况。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记11">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第二十章&quot;内嵌补丁&quot;练习 &quot;内嵌补丁&quot;是&quot;内嵌代码补丁&quot;（Inline Code Patch）的简称，难以直接修改指定代码时，插入并运行被称为&quot;洞穴代码&quot;（Code Cave）的补丁代码后，对程序打补丁。常用于运行时压缩（或加密处理）而难以直接修改的情况。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206113450362.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206114417214.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206114436112.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161105395.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161254808.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161343930.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161420463.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207163811971.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161733025.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207162101974.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161733025.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207162243371.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207164129987.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207165423151.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207165827158.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207172959638.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173214791.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173250338.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173547014.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173624240.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173746325.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207175428169.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207175604997.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180207186.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180221420.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207182713918.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207184027437.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207184447970.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180207186.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180221420.png">
+<meta property="article:published_time" content="2021-12-06T01:56:53.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:13.445Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206113450362.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记11 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记11
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-06 09:56:53" itemprop="dateCreated datePublished" datetime="2021-12-06T09:56:53+08:00">2021-12-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:13" itemprop="dateModified" datetime="2024-10-16T13:19:13+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第二十章"><a href="#逆向工程核心原理第二十章" class="headerlink" title="逆向工程核心原理第二十章"></a>逆向工程核心原理第二十章</h3><h4 id="内嵌补丁-练习"><a href="#内嵌补丁-练习" class="headerlink" title="&quot;内嵌补丁&quot;练习"></a>&quot;内嵌补丁&quot;练习</h4><ul>
+<li><p>&quot;内嵌补丁&quot;是&quot;内嵌代码补丁&quot;（Inline Code Patch）的简称，难以直接修改指定代码时，插入并运行被称为&quot;洞穴代码&quot;（Code Cave）的补丁代码后，对程序打补丁。常用于运行时压缩（或加密处理）而难以直接修改的情况。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206113450362.png" alt="image-20211206113450362"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<ul>
+<li>上图左边描述的是典型的运行时压缩代码（或者加密代码）。EP代码先将加密的OEP代码解密，然后再跳转到OEP处。若要打补丁的代码存在于经过加密的OEP区域是很难打补丁的（即使知道代码所在位置也是如此），因为解码过程中可能会解出完全不同的结果。</li>
+<li>解决上述问题的简单方法就是，在文件中加一层中间层的补丁代码，让EP代码解密后跳转至中间层。在中间层执行补丁代码后（由于已经解密OEP，所以可以这么修改）再跳转到OEP处。</li>
+</ul>
+<h4 id="练习：Patchme"><a href="#练习：Patchme" class="headerlink" title="练习：Patchme"></a>练习：Patchme</h4><ul>
+<li><p>《逆向工程核心原理》作者的github上可以下载本章的patchme程序，<a target="_blank" rel="noopener" href="https://github.com/reversecore/book">https://github.com/reversecore/book</a></p>
+</li>
+<li><p>运行程序，可以看到程序非常简单，只有两个弹窗。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206114417214.png" alt="image-20211206114417214"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211206114436112.png" alt="image-20211206114436112"></p>
+</li>
+<li><p>这个patchme比较简单，只要修改上面两处字符串即可。</p>
+</li>
+</ul>
+<h5 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h5><ul>
+<li><p>用Ollydbg打开unpackme#1.aC.exe，可以看到EP非常简单</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161105395.png" alt="image-20211207161105395"></p>
+</li>
+<li><p>跟踪调试，很快可以看到第一个解密循环，如下图所示，第一个解密循环作用是将&quot;004010F5&quot;～&quot;00401248&quot;（004010F5+154-1）处的数据XOR（异或） 44</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161254808.png" alt="image-20211207161254808"></p>
+</li>
+<li><p>知道第一个循环作用后，我们跳过该循环，继续往下调试，很快碰见第二个解密循环，将&quot;00401007&quot;～&quot;00401085&quot;处的数据XOR（异或）7，第二个解密循环的下面是第三个解密循环，第三个解密循环，解密的区域与第一个相同，只是XOR的值为11，说明&quot;004010F5&quot;～&quot;00401249&quot;区域经过了双重XOR加密</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161343930.png" alt="image-20211207161343930"></p>
+</li>
+<li><p>跳过第二、三个解密循环后，继续调试，就能发现&quot;00401038&quot;处的校验函数，该函数循环从通&quot;004010F5&quot;～&quot;00401248&quot;区域读取4个字节数据累加得到校验和，再将结果与&quot;31EB8D80&quot;比较，判断程序是否被修改。若校验失败会弹出&quot;CrC of this file has been modified !!!&quot;的错误提示。0040105D处的CALL 0040108A命令是调用另一解密循环，用来解密0040124A～00401279处的数据</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161420463.png" alt="image-20211207161420463"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207163811971.png" alt="image-20211207163811971"></p>
+<blockquote>
+<p>EDX寄存器为4个字节大小，像这样向其中不断加上4个字节的值，就会发生溢出（overflow）问题。一般的校验和计算中常常忽略该溢出问题，使用最后一个保存在EDX的值</p>
+</blockquote>
+</li>
+<li><p>跳过校验和部分，继续调试，很快就会跳转至OEP处，如下图所示，OEP所在地址为0040121E</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161733025.png" alt="image-20211207161733025"></p>
+</li>
+<li><p>如果解密后，Ollydbg在0040121E～00401248没有显示为汇编指令，可以先选中0040121E～00401248这片区域，然后右键选择&#x3D;&gt;分析&#x3D;&gt;分析代码，然后Ollydbg就会把该处数据视为汇编代码展示出来</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207162101974.png" alt="image-20211207162101974"></p>
+</li>
+<li><p>OEP代码用来运行对话框，执行位于0040123E地址处的CALL DialogBoxParamA()命令后即弹出对话框。下面是DialogBoxParamA() API的定义</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">INT_PTR WINAPI DialogBoxParamA(</span><br><span class="line">	__in_opt	HINSTANCE hInstance,</span><br><span class="line">	__in	LPCTSTR lpTemplateName,</span><br><span class="line">	__in_opt	HWND hWndParent,</span><br><span class="line">	__in_opt	DLGPROC lpDialogFunc,</span><br><span class="line">	__in	LPARAM dwInitParam</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>DialogBoxParamA() API的第四个参数lpDialogFunc用来指出Dialog Box Procedure的地址。地址40122C处有条push 4010F5命令，由此可见，函数第四个参数的地址为4010F5（栈先进后出，所以第二个进栈即位倒数第二个出栈）。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207161733025.png" alt="image-20211207161733025"></p>
+</li>
+<li><p>下图为004010F5处的代码，可以看到我们要修改的字符串都在里面</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207162243371.png" alt="image-20211207162243371"></p>
+</li>
+<li><p>根据上面的分析，可以总结出下面的，代码结构图。如图所示，[EP Code]只是用来调用[Decoding Code]的，实际的解密处理是由[Decoding Code]完成的。按照[B]-[A]-[B]的顺序解码，运行解密后的[A]区代码，在[A]区代码会求得[B]区的校验和，并据此判断[B]区是否发生过改变。然后对[C]区解码，最后跳转至OEP处（0040121E）</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207164129987.png" alt="image-20211207164129987"></p>
+</li>
+</ul>
+<h5 id="内嵌补丁-练习-1"><a href="#内嵌补丁-练习-1" class="headerlink" title="&quot;内嵌补丁&quot;练习"></a>&quot;内嵌补丁&quot;练习</h5><ul>
+<li>操作顺序：首先向文件合适位置插入用于修改字符串的代码，然后在上图的[A]区域将JMP OEP命令修改为JMP补丁代码（修改时要充分考虑文件中的[A]区域处于加密状态）。在补丁代码中更改字符串，然后再通过JMP命令跳转至OEP处，这样整个内嵌补丁过程就完成了。</li>
+</ul>
+<h5 id="补丁代码要设置在何处"><a href="#补丁代码要设置在何处" class="headerlink" title="补丁代码要设置在何处"></a>补丁代码要设置在何处</h5><ul>
+<li><p>这个问题在进行内嵌补丁的过程中非常重要。有如下3种设置方法：</p>
+<ol>
+<li>设置到文件的空白区域</li>
+<li>扩展最后节区后设置</li>
+<li>添加新节区后设置</li>
+</ol>
+</li>
+<li><p>补丁代码较少时，使用方法1，其他情况使用方法2或方法3。首先尝试方法1，使用PE View查看示例文件的第一个节区（.text）头，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207165423151.png" alt="image-20211207165423151"></p>
+</li>
+<li><p>接着查看Section Alignment的值</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207165827158.png" alt="image-20211207165827158"></p>
+</li>
+<li><p>可以看到第一个节区Virtual Size为280，但是由于Section Alignment为1000，所以第一个节区后面RVA 1280之后存在大量NULL填充的空白区域，我们可以在该区域添加补丁代码。</p>
+</li>
+<li><p>用Ollydbg查看00401280地址，如下图所示，可以看到，该处之后确实存在大量空白区域</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207172959638.png" alt="image-20211207172959638"></p>
+</li>
+<li><p>我们开始添加补丁代码，首先添加我们需要修改的字符串。鼠标选中00401280地址处，右键选择二进制编辑</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173214791.png" alt="image-20211207173214791"></p>
+</li>
+<li><p>取消勾选保持大小，然后在ASCII中输入所需字符串，这里为&quot;blog.iz4.cc&quot;，然后点确定即可</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173250338.png" alt="image-20211207173250338"></p>
+</li>
+<li><p>同样的在0040128C处添加字符串&quot;Unpacked!&quot;</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173547014.png" alt="image-20211207173547014"></p>
+</li>
+<li><p>如果添加字符串后，该部分数据被Ollydbg识别为汇编指令的话，可以鼠标选中该区域，右键选择 分析&#x3D;&gt;分析代码，然后OD就能将该部分识别为ASCII字符串了。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173624240.png" alt="image-20211207173624240"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207173746325.png" alt="image-20211207173746325"></p>
+</li>
+<li><p>添加好字符串后，接着我们添加补丁代码的汇编指令，在00401296处按空格即可编辑汇编指令</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mov ecx, 0xC		; 0xC为要拷贝的字符串的字符长度（包括&#x27;\0&#x27;）==&gt; blog.iz4.cc\0</span><br><span class="line">mov esi, 00401280	; 让ESI指向第一个需要拷贝的字符串所在地址</span><br><span class="line">mov edi, 00401123	; 修改的目标字符串所在地址</span><br><span class="line">rep movsb	; &lt;==&gt; rep movs byte ptr es:[edi],byte ptr ds:[esi]</span><br><span class="line">;这个指令意思就是将ESI指向的地址的值以1字节方式拷贝到EDI指向的地址中</span><br><span class="line">;重复执行ECX次，每次执行后ESI+1，EDI+1，ECX-1</span><br><span class="line"></span><br><span class="line">mov ecx, 0xA		; 0xA为要拷贝的字符串的字符串长度（包括&#x27;\0&#x27;）==&gt; Unpacked\0</span><br><span class="line">mov esi, 0040128C	; 让ESI指向第二个需要拷贝的字符串所在地址</span><br><span class="line">mov edi, 0040110A	; 修改的目标字符串所在地址</span><br><span class="line">rep movsb	; &lt;==&gt; rep movs byte ptr es:[edi],byte ptr ds:[esi] ; 作用同上 </span><br><span class="line"></span><br><span class="line">jmp 0040121E		; 跳转至OEP</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207175428169.png" alt="image-20211207175428169"></p>
+</li>
+<li><p>添加完，指令后，我们先修改地址00401083处的jmp命令跳转至我们的补丁代码位置，测试效果</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207175604997.png" alt="image-20211207175604997"></p>
+</li>
+<li><p>如下图所示，可以看到，两个字符串成功被修改，接下来就是保存修改到可执行文件</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180207186.png" alt="image-20211207180207186"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180221420.png" alt="image-20211207180221420"></p>
+</li>
+<li><p>在左下角的数据窗口中，选中修改的00401280～004012BC区域，然后右键选择复制到可执行文件，再保存即可</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207182713918.png" alt="image-20211207182713918"></p>
+</li>
+<li><p>这里不直接保存00401083处的jmp命令修改，因为该区域是加密的，所以文件中修改该处的jmp指令也应该替换为加密后的数据</p>
+</li>
+<li><p>由00401083 &#x3D;&gt; RVA 1083 &#x3D;&gt; RAW: 483，用HEdit查看该处偏移。从文件偏移看加密只到485，后面的0000并不是加密区域。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207184027437.png" alt="image-20211207184027437"></p>
+</li>
+<li><p>如下图所示，OD中<code>jmp 00401296</code>对应的机器码为E90E020000，从上面可知，后面两个00不用加密。因为是XOR（异或）加密，所以加解密都是对同一个key进行XOR运算即可。所以应该将&quot;E90E02&quot;加密后为&quot;EE0905&quot;，所以文件483偏移处的&quot;EE9106&quot;应该修改为&quot;EE0905&quot;</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207184447970.png" alt="image-20211207184447970"></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">E9 xor 07 = EE</span><br><span class="line">0E xor 07 = 09</span><br><span class="line">02 xor 07 = 05</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后使用HEdit将文件483偏移处的&quot;EE9106&quot;应该修改为&quot;EE0905&quot;保存即可，运行可以发现程序成功跳转至补丁代码。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180207186.png" alt="image-20211207180207186"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B011/image-20211207180221420.png" alt="image-20211207180221420"></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/" rel="prev" title="《逆向工程核心原理》学习笔记10">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记10
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B012/" rel="next" title="《逆向工程核心原理》学习笔记12">
+      《逆向工程核心原理》学习笔记12 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E5%8D%81%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第二十章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%B5%8C%E8%A1%A5%E4%B8%81-%E7%BB%83%E4%B9%A0"><span class="nav-number">1.1.</span> <span class="nav-text">&quot;内嵌补丁&quot;练习</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%83%E4%B9%A0%EF%BC%9APatchme"><span class="nav-number">1.2.</span> <span class="nav-text">练习：Patchme</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B0%83%E8%AF%95"><span class="nav-number">1.2.1.</span> <span class="nav-text">调试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%85%E5%B5%8C%E8%A1%A5%E4%B8%81-%E7%BB%83%E4%B9%A0-1"><span class="nav-number">1.2.2.</span> <span class="nav-text">&quot;内嵌补丁&quot;练习</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A1%A5%E4%B8%81%E4%BB%A3%E7%A0%81%E8%A6%81%E8%AE%BE%E7%BD%AE%E5%9C%A8%E4%BD%95%E5%A4%84"><span class="nav-number">1.2.3.</span> <span class="nav-text">补丁代码要设置在何处</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : 'f36cbbef8b7034ccda85e9b952147f83',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

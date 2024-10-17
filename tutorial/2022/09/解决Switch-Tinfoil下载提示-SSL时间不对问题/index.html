@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 switch 硬破后，一般都把任天堂相关的域名IP屏蔽了，所以就不能自动联网校准时间  时间久了，switch的时间就会与标准时间偏差很大，使用Tinfoil下载就有可能会出现下面的错误，这种情况手动设置时间一般与无济于事   123SSL Connection failed.Your system clock is likely incorrect.Please ensure your s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="解决Switch-Tinfoil下载提示-SSL时间不对问题">
+<meta property="og:url" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 switch 硬破后，一般都把任天堂相关的域名IP屏蔽了，所以就不能自动联网校准时间  时间久了，switch的时间就会与标准时间偏差很大，使用Tinfoil下载就有可能会出现下面的错误，这种情况手动设置时间一般与无济于事   123SSL Connection failed.Your system clock is likely incorrect.Please ensure your s">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/1.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134147384.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134402537.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134654028.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134753022.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134947979.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135447465.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135526102.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135646255.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135732599.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911140412095.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911140629632.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911142923485.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911142849430.png">
+<meta property="article:published_time" content="2022-09-11T05:21:35.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:21.597Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="教程">
+<meta property="article:tag" content="Switch">
+<meta property="article:tag" content="杂项">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/1.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>解决Switch-Tinfoil下载提示-SSL时间不对问题 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          解决Switch-Tinfoil下载提示-SSL时间不对问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-11 13:21:35" itemprop="dateCreated datePublished" datetime="2022-09-11T13:21:35+08:00">2022-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:21" itemprop="dateModified" datetime="2024-10-16T13:19:21+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>switch 硬破后，一般都把任天堂相关的域名IP屏蔽了，所以就不能自动联网校准时间</p>
+</li>
+<li><p>时间久了，switch的时间就会与标准时间偏差很大，使用Tinfoil下载就有可能会出现下面的错误，这种情况手动设置时间一般与无济于事</p>
+  <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SSL Connection failed.</span><br><span class="line">Your system clock is likely incorrect.</span><br><span class="line">Please ensure your system date time is set correctly.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>这时候就可以使用一个插件来同步时间：<a target="_blank" rel="noopener" href="https://github.com/nedex/QuickNTP.git">https://github.com/nedex/QuickNTP.git</a></p>
+</li>
+<li><p>但QuickNTP默认的几个服务器，有时候也会出现连不上情况</p>
+</li>
+<li><p>接下来介绍，如何将QuickNTP默认的NTP服务器替换为国内NTP服务器并重新编译.ovl文件</p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>首先直接git clone下来</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/nedex/QuickNTP.git</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>需要注意的是，QuickNTP的libs目录下引用了另一个github仓库，默认是不会被一起clone</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/1.png" alt="1"></p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134147384.png" alt="image-20220911134147384"></p>
+</li>
+<li><p>所以需要手动clone <a target="_blank" rel="noopener" href="https://github.com/WerWolv/libtesla.git">https://github.com/WerWolv/libtesla.git</a>并替换libs目录下的libtesla</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd libs</span><br><span class="line">rm -r libtesla</span><br><span class="line">git clone https://github.com/WerWolv/libtesla.git</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>clone好后，直接make，会报下面的错，原因是缺少<a target="_blank" rel="noopener" href="https://github.com/devkitPro">devkitPro</a></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Makefile:6: *** &quot;Please set DEVKITPRO in your environment. export DEVKITPRO=&lt;path to&gt;/devkitpro&quot;.  Stop.</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134402537.png" alt="image-20220911134402537"></p>
+</li>
+<li><p>安装<a target="_blank" rel="noopener" href="https://github.com/devkitPro">devkitPro</a>有多种方式，这里选择最省事的，用docker拉取官方镜像，官方docker镜像链接<a target="_blank" rel="noopener" href="https://hub.docker.com/u/devkitpro/">https://hub.docker.com/u/devkitpro/</a></p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134654028.png" alt="image-20220911134654028"></p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134753022.png" alt="image-20220911134753022"></p>
+</li>
+<li><p>可以点击查看每个镜像的用途，可以看到，devkitpro&#x2F;devkita64是用于Nintendo Switch的开发环境，所以这里直接选这个即可</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911134947979.png" alt="image-20220911134947979"></p>
+</li>
+<li><p>拉取docker镜像</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull devkitpro/devkita64</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>运行镜像，使用-v参数，将主机的QuickNTP所在目录映射到docker容器的&#x2F;data目录</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将/Users/cc/github替换为QuickNTP所在目录，可将/data替换为你想要的目录</span></span><br><span class="line">docker run -itd --name devkita64 -v /Users/cc/github:/data devkitpro/devkita64</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>进入容器shell</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135447465.png" alt="image-20220911135447465"></p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker exec -it devkita64 /bin/bash</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>进入&#x2F;data&#x2F;QuickNTP目录</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135526102.png" alt="image-20220911135526102"></p>
+</li>
+<li><p>运行make，即可编译得到QuickNTP.ovl</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135646255.png" alt="image-20220911135646255"></p>
+</li>
+<li><p>如果make报没有&quot;tesla.hpp&quot;文件错误，那么就需要检查QuickNTP&#x2F;libs&#x2F;libtesla&#x2F;目录下是否为空，若为空，说明是前面说的clone没有把github的子仓库一起clone下来的问题，只需要clone下libtesla即可</p>
+  <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/data/QuickNTP/source/main.cpp:2:10: fatal error: tesla.hpp: No such file or directory</span><br><span class="line">    2 | #include &lt;tesla.hpp&gt;</span><br><span class="line">      |          ^~~~~~~~~~~</span><br><span class="line">compilation terminated.</span><br><span class="line">make[1]: *** [/opt/devkitpro/devkitA64/base_rules:14: main.o] Error 1</span><br><span class="line">make: *** [Makefile:170: build] Error 2</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911135732599.png" alt="image-20220911135732599"></p>
+</li>
+<li><p>可以正常编译了，那么接下来就是修改默认的NTP服务器，替换为国内的NTP服务器</p>
+</li>
+<li><p>QuickNTP的服务器列表在servers.hpp中，如下图，两个字符串数组，分别为Title和域名的列表</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911140412095.png" alt="image-20220911140412095"></p>
+</li>
+<li><p>按照格式，替换为国内常见的NTP服务器，如下图所示：</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;initializer_list&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line">std::initializer_list&lt;std::string&gt; NTPSERVERS[<span class="number">2</span>] = &#123;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;China NTP 1&quot;</span>,</span><br><span class="line">        <span class="string">&quot;China NTP 2&quot;</span>,</span><br><span class="line">        <span class="string">&quot;China NTSC&quot;</span>,</span><br><span class="line">        <span class="string">&quot;China Edu&quot;</span>,</span><br><span class="line">        <span class="string">&quot;Aliyun&quot;</span>,</span><br><span class="line">        <span class="string">&quot;Tencent&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;cn.pool.ntp.org&quot;</span>,</span><br><span class="line">        <span class="string">&quot;cn.ntp.org.cn&quot;</span>,</span><br><span class="line">        <span class="string">&quot;ntp.ntsc.ac.cn&quot;</span>,</span><br><span class="line">        <span class="string">&quot;edu.ntp.org.cn&quot;</span>,</span><br><span class="line">        <span class="string">&quot;ntp1.aliyun.com&quot;</span>,</span><br><span class="line">        <span class="string">&quot;time1.cloud.tencent.com&quot;</span>,</span><br><span class="line">    &#125;&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911140629632.png" alt="image-20220911140629632"></p>
+</li>
+<li><p>保存，然后重新make下，即可生成修改后的QuickNTP.ovl文件</p>
+</li>
+<li><p>使用QuickNTP.ovl插件，需要<a target="_blank" rel="noopener" href="https://github.com/WerWolv/Tesla-Menu">https://github.com/WerWolv/Tesla-Menu</a>，下载最新Tesla-Menu的releases并复制到switch SD卡的&#x2F;switch&#x2F;.overlays目录下即可</p>
+</li>
+<li><p>再将编译好的QuickNTP.ovl也复制到switch SD卡的&#x2F;switch&#x2F;.overlays目录下</p>
+</li>
+<li><p>同时按住switch 的&quot; L&quot; 和 &quot;▼&quot; 然后往下戳右摇杆，即可调出Tesla-Menu，然后选择QuickNTP即可开始设置时间</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911142923485.png" alt="image-20220911142923485"></p>
+</li>
+<li><p>如下图所示，选择一个服务器，并点击Sync time即可同步时间，并且可以看到服务器列表成功替换为自定义的列表，出现Syced with xxx后就可以重启switch，这样tinfoil就不会报SSL 时间错误</p>
+<p>  <img src="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/image-20220911142849430.png" alt="image-20220911142849430"></p>
+</li>
+<li><p>当然也可以通过QuickNTP的User-set time把自己switch系统设置中手动设置的时间当作标准时间</p>
+</li>
+<li><p>本文编译的QuickNTP.ovl文件下载链接:<a href="QuickNTP.ovl">QuickNTP.ovl</a></p>
+</li>
+<li><p>QuickNTP原版下载链接:<a target="_blank" rel="noopener" href="https://github.com/nedex/QuickNTP/releases/latest">https://github.com/nedex/QuickNTP/releases/latest</a></p>
+</li>
+<li><p>如果只是替换QuickNTP默认服务器列表，其实不用编译也可以，直接使用16进制编辑器打开QuickNTP.ovl，搜索并将域名字符串替换掉即可，这里主要是想了解下如何编译switch的一些插件</p>
+</li>
+</ul>
+<hr>
+<ul>
+<li>新版QuickNTP修改服务器列表方法与上面差不多，修改servers.hpp即可，更新一个最新编译的文件：<a href="QuickNTP_1.2.8.ovl">QuickNTP_1.2.8.ovl</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%99%E7%A8%8B/" rel="tag"># 教程</a>
+              <a href="/tags/Switch/" rel="tag"># Switch</a>
+              <a href="/tags/%E6%9D%82%E9%A1%B9/" rel="tag"># 杂项</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3ChipWhisperer-Unable-to-import-LASCAR%E9%94%99%E8%AF%AF/" rel="prev" title="解决ChipWhisperer-Unable to import LASCAR错误">
+      <i class="fa fa-chevron-left"></i> 解决ChipWhisperer-Unable to import LASCAR错误
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/" rel="next" title="Python实现AES加解密">
+      Python实现AES加解密 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">开始</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '26d8b50beaa86711f7e087e3a68c1087',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

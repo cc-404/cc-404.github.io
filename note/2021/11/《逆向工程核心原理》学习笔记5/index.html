@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第八章abex&#39; crackme2 首先运行软件，了解一些软件基本信息">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记5">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第八章abex&#39; crackme2 首先运行软件，了解一些软件基本信息">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142604406.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142718701.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142832266.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124144122133.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124145709950.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124151422774.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124152406392.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124153235226.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124154042910.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124154139598.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124185309910.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124190104892.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124192820218.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124192505933.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124194613294.png">
+<meta property="article:published_time" content="2021-11-24T01:14:28.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:15.921Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142604406.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记5 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记5
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-24 09:14:28" itemprop="dateCreated datePublished" datetime="2021-11-24T09:14:28+08:00">2021-11-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:15" itemprop="dateModified" datetime="2024-10-16T13:19:15+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第八章"><a href="#逆向工程核心原理第八章" class="headerlink" title="逆向工程核心原理第八章"></a>逆向工程核心原理第八章</h3><h5 id="abex-crackme2"><a href="#abex-crackme2" class="headerlink" title="abex&#39; crackme2"></a>abex&#39; crackme2</h5><ul>
+<li><p>首先运行软件，了解一些软件基本信息</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142604406.png" alt="image-20211124142604406"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<ul>
+<li><p>可以看到软件需要注册的序列号，其中名字长度还要大于4，根据这些信息，我们接下来的调试就简单多了</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142718701.png" alt="image-20211124142718701"></p>
+</li>
+</ul>
+<p><img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124142832266.png" alt="image-20211124142832266"></p>
+<h5 id="VisualBasic程序特征"><a href="#VisualBasic程序特征" class="headerlink" title="VisualBasic程序特征"></a>VisualBasic程序特征</h5><ul>
+<li><p>abex&#39;s crackme2文件由VB编写的，这里了解下VB程序的文件特征</p>
+</li>
+<li><p>VB使用名为MSVBVM60.dll(Microsoft Visual Basic Virtual Machine 6.0)的VB专用引擎，又称(The Thunder Runtime Engine)</p>
+</li>
+<li><p>VB使用例子：显示消息框时，VB代码中要调用MsgBox函数，其实，VB编辑器真正调用的是MSVBVM60.dll里的rtcMsgBox()函数，在该函数内部通过调用user32.dll里的MessageBoxW()函数(Win32 API)来工作，此外也可以在VB代码中直接调用user32.dll里的MessageBoxW()。用图片来描述的话就像下图一样，相当于在开发者代码和底层代码user32.dll之间加了一层MSVBVM60.dll，而且也保留了开发者代码直接调用底层代码的方式。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124144122133.png" alt="image-20211124144122133"></p>
+</li>
+<li><p>根据便于选项不同，可以将VB编译为本地代码(N Code)和伪代码(P Code)。</p>
+</li>
+<li><p>VB程序采用Windows操作系统的事件驱动方式工作，因此main()或WinMain()中并不存在用户代码，用户代码存在于各个事件处理程序(event handler)之中。</p>
+</li>
+<li><p>接下来开始调试，用OD打开abex&#39;s crackme2.exe查看反汇编文件，可以看到EP地址为&quot;00401238&quot;，该命令将把VB的RT_MainStruct结构体地址&quot;00401E14&quot;压入栈，然后&quot;0040123D&quot;地址处命令<code>call 00401232</code>调用&quot;00401232&quot;处的<code>jmp dword ptr ds:[0x4010A0]</code>指令，该指令会跳转至VB引擎主函数ThunRTMain()（前面压入栈的值作为函数参数），这3行代码就是VB的全部启动代码。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124145709950.png" alt="image-20211124145709950"></p>
+</li>
+</ul>
+<h6 id="间接调用"><a href="#间接调用" class="headerlink" title="间接调用"></a>间接调用</h6><ul>
+<li>&quot;0040123D&quot;地址处的CALL命令用于调用ThunRTMain()函数，但它不是直接调用，而是通过中间&quot;00401232&quot;地址处的JMP命令跳转，这是VC++、VB编译器中常用的间接调用法(Indirect Call)</li>
+</ul>
+<h6 id="RT-MainStruct结构体"><a href="#RT-MainStruct结构体" class="headerlink" title="RT_MainStruct结构体"></a>RT_MainStruct结构体</h6><ul>
+<li><p>ThunRTMain()函数的参数为RT_MainStruct结构体，RT_MainStruct结构体存在于地址&quot;00401E14&quot;处，微软未公开这个结构体的细节，但有逆向高手已经完成了对这个结构体的分析。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124151422774.png" alt="image-20211124151422774"></p>
+</li>
+<li><p>《逆向工程核心原理》书中没有直接提及RT_MainStruct结构体的信息，谷歌直接搜索&quot;RT_MainStruct&quot;，发现了一篇VB的逆向文章，可能就是书中所提到的分析，<a target="_blank" rel="noopener" href="http://www.reteam.org/papers/e46.pdf">VISUAL BASIC REVERSED - A decompiling approach</a>，这里先记下链接，关于RT_MainStruct的细节，有待后面学习补充。</p>
+</li>
+</ul>
+<h6 id="分析crackme"><a href="#分析crackme" class="headerlink" title="分析crackme"></a>分析crackme</h6><ul>
+<li><p>接下来我们跳过ThunRTMain()函数，来分析crackme的代码</p>
+</li>
+<li><p>要定位目标代码，有多种方式，这里采用检索字符串方式，因为前面运行软件时，我们已经知道了软件包含了哪些字符串，右键代码窗口选择 中文搜索引擎&#x3D;&gt;智能搜索，可以看到软件的所有字符串信息如下</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124152406392.png" alt="image-20211124152406392"></p>
+</li>
+<li><p>我们直接双击Wrong serial！查看引用该字符串的代码位置，可以看到，标题(&quot;Wrong serial!&quot;)，内容(&quot;Nope, this serial is wrong!&quot;)，以及实际调用消息框函数代码(004034A6)都显示出来了</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124153235226.png" alt="image-20211124153235226"></p>
+</li>
+<li><p>从编程角度来看，这种校验序列号软件，一般根据某种算法生成序列号，然后将用户输入的序列号进行比对，如果相同则跳转正确，否则跳转错误。根据这个思路，我们向上查找相应代码。</p>
+</li>
+<li><p>按照上面思路查找，果然发现了条件语句分支的地方，而且不止一处，一共有两次判断两个字符串是否相等的地方，分别位于&quot;00403332&quot;（调用__vbaVarTstEq()函数）和&quot;00403424&quot;（调用__vbaVarTstNe()函数），从参数来看两个比较的是同两个参数，但是两个函数逻辑相反，前者判断的是否相等，后者是否不相等。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124154042910.png" alt="image-20211124154042910"></p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124154139598.png" alt="image-20211124154139598"></p>
+</li>
+<li><p>test指令说明：逻辑比较，与bit-wise logical &#39;AND&#39;一样（仅改变EFLAGS寄存器而不改变操作数的值，若两个操作数中一个为0则AND运算结果被置为0&#x3D;&gt;ZF&#x3D;1），je指令：jump if equal，若ZF&#x3D;1，则跳转</p>
+</li>
+<li><p>这里顺便学习下EFLAGS寄存器（标志寄存器）的内容，EFLAGS有32个位元，全部记住比较困难，其中最重要的有ZF(Zero Flag， 零标志)、OF(Overflow Flag，溢出标志)、CF(Carry Flag，进位标志)，这三个指令之所以重要是因为在某些汇编指令，特别是Jcc(条件跳转)指令中要检查这3个标志的值，并根据它们的值决定是否执行某个操作</p>
+<ul>
+<li>ZF：若运算结果为0，则其为1（True），否则其为0（False）</li>
+<li>OF：有符号整数（signed integer）溢出时，OF值被置为1。此外，MSB(Most Significant Bit，最高有效位)改变时，其值也被设为1</li>
+<li>CF：无符号整数（unsigned integer）溢出时，CF被设为1</li>
+</ul>
+</li>
+<li><p>分析到这其实就可以先直接爆破crackme，爆破这个crackme很简单，只需要nop掉第一个跳转语句然后将第二个跳转语句&quot;je&quot;改为&quot;jmp&quot;，这样输入任意序列号都会提示成功。（如果只修改第一跳转，那么程序虽然会提示成功，但点确定后又会再弹一次失败的窗。）</p>
+</li>
+<li><p>还有一种方式能达到破解效果就是，在条件语句前下断点，调试运行，输入任意序列号，点确定，然后就可以在右下角栈窗口查看得到正确的序列号。下图为输入Name：&quot;CCCC&quot;，Serial：&quot;11111&quot;，后的结果，可以看到，比较的两个字符串为&quot;A7A7A7A7&quot;和&quot;11111&quot;，因为Name全是单一字符&quot;C&quot;，序列号全是&quot;A7&quot;，所以基本可以确定，这个软件的序列号生成算法中&quot;C&quot;映射为&quot;A7&quot;。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124185309910.png" alt="image-20211124185309910"></p>
+</li>
+<li><p>这里决定继续分析，找出软件的序列号的生成算法的位置</p>
+</li>
+<li><p>要找出序列号生成算法位置，当然得从函数的起始位置开始找起，根据之前学习的栈帧概念，我们继续往上找，直到找到<code>push ebp</code>和<code>mov esp, ebp</code>这两行代码为止，这样就可以找到函数的起始位置&quot;00402ED0&quot;</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124190104892.png" alt="image-20211124190104892"></p>
+</li>
+<li><p>虽然找到了函数的起始地址，但是这么多行代码，而且还有好几处调用其他函数的代码，该怎么找到生成序列号的算法呢？这里可以输入的Name为思路去入手，因为序列号是随Name变化而变化的，说明生成序列号的算法用到了Name中的字符串，我们只要调试时时刻注意栈内存的变化，什么时候栈内存出现了（获取了）Name的字符串，那么从该处开始，往下的代码就离我们要找的生成序列号算法不远了</p>
+</li>
+<li><p>按照上面的思路，我们逐步单步测试，并注意dump窗口或者栈窗口的数据变化。由于VB中，字符串是使用字符串对象（与C语言使用char数组不同），直接在dump窗口查看内存，很难认出实际的字符串，需要右键选择 长型&#x3D;&gt;ASCII数据地址。栈窗口则不用这么设置，可以直接认出字符串。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124192820218.png" alt="image-20211124192820218"></p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124192505933.png" alt="image-20211124192505933"></p>
+</li>
+<li><p>最终我们在运行完&quot;00402F98&quot;的call命令后，内存中出现了我们输入的Name：&quot;CCCC&quot;，找到这个基准点后，离我们要找的序列号生成算法代码就不远了</p>
+</li>
+<li><p>继续往下调试，在&quot;0040300F处&quot;我们可以看到，调用了__vbaLenVar函数，这部分代码代码逻辑就是判断用户序列号长度是否小于4的地方，离序列号算法更近了一步</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05/image-20211124194613294.png" alt="image-20211124194613294"></p>
+</li>
+<li><p>继续调试，我们会遇到下面这个循环，这个循环就是我们要找的序列号生成算法的位置</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">0403102   .  BB 04000000     mov ebx,0x4	; EBX = 4 (循环次数)</span><br><span class="line">...</span><br><span class="line">0040318B   .  FF15 30104000   call dword ptr ds:[&lt;&amp;MSVBVM60.__vbaVarForInit&gt;&gt;; \__vbaVarForInit（For循环初始化）</span><br><span class="line">00403191   .  8B1D 4C104000   mov ebx,dword ptr ds:[&lt;&amp;MSVBVM60.#632&gt;]        ;  msvbvm60.rtcMidCharVar</span><br><span class="line">00403197   &gt;  85C0            test eax,eax	; 循环开始</span><br><span class="line">00403199   .  0F84 06010000   je abexcrac.004032A5	; 符合条件则跳出循环</span><br><span class="line">...</span><br><span class="line">0040329A   .  FF15 C0104000   call dword ptr ds:[&lt;&amp;MSVBVM60.__vbaVarForNext&gt;&gt;; \__vbaVarForNext（下一个循环）</span><br><span class="line">004032A0   .^\E9 F2FEFFFF     jmp abexcrac.00403197	; 循环结束</span><br><span class="line">004032A5   &gt;  8B45 08         mov eax,dword ptr ss:[ebp+0x8]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>继续分析这部分代码的话能得出以下序列号生成算法</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">取用户输入的Name前4位字符</span><br><span class="line">将每位字符先转为ASCII码值</span><br><span class="line">再加上偏移量0x64得到新的16进制值</span><br><span class="line">将16进制转为字符串</span><br><span class="line">拼接所有生成的字符串得到序列号</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>值得一题的是这篇文章很有参考意义<a target="_blank" rel="noopener" href="http://www.reteam.org/papers/e46.pdf">VISUAL BASIC REVERSED - A decompiling approach</a>，这篇文章末尾提到，VB中api函数的参数和返回值很多都是对象(Object)而不是具体的值(Value)，因此当你分析VB的函数参数和返回值时，你可以考虑把它当作对象来分析</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04/" rel="prev" title="《逆向工程核心原理》学习笔记4">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记4
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B06/" rel="next" title="《逆向工程核心原理》学习笔记6">
+      《逆向工程核心原理》学习笔记6 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%85%AB%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第八章</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#abex-crackme2"><span class="nav-number">1.0.1.</span> <span class="nav-text">abex&#39; crackme2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#VisualBasic%E7%A8%8B%E5%BA%8F%E7%89%B9%E5%BE%81"><span class="nav-number">1.0.2.</span> <span class="nav-text">VisualBasic程序特征</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E9%97%B4%E6%8E%A5%E8%B0%83%E7%94%A8"><span class="nav-number">1.0.2.1.</span> <span class="nav-text">间接调用</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#RT-MainStruct%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.0.2.2.</span> <span class="nav-text">RT_MainStruct结构体</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E5%88%86%E6%9E%90crackme"><span class="nav-number">1.0.2.3.</span> <span class="nav-text">分析crackme</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '67623770ce8cf6c3f6364c177361f97a',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 最近入手了块Chipwhisperer-lite，决定先跟着官方教程学习了解侧信道攻击 New-AE官网：https:&#x2F;&#x2F;www.newae.com&#x2F; Chipwhisperer官方GitHub仓库：https:&#x2F;&#x2F;github.com&#x2F;newaetech&#x2F;chipwhisperer Chipwhisperer软件环境官方安装教程：https:&#x2F;&#x2F;chipwhisperer.readthed">
+<meta property="og:type" content="article">
+<meta property="og:title" content="侧信道攻击学习笔记1">
+<meta property="og:url" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 最近入手了块Chipwhisperer-lite，决定先跟着官方教程学习了解侧信道攻击 New-AE官网：https:&#x2F;&#x2F;www.newae.com&#x2F; Chipwhisperer官方GitHub仓库：https:&#x2F;&#x2F;github.com&#x2F;newaetech&#x2F;chipwhisperer Chipwhisperer软件环境官方安装教程：https:&#x2F;&#x2F;chipwhisperer.readthed">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813175523509.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813175941844.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813180223510.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190104862.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190238161.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190406861.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190456892.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190633871.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190913530.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813200838496.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813201148039.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813202109830.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813202453123.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813202903264.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813203442632.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813203554149.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813203853260.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213322870.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213516138.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213643346.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213827759.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813214350672.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813214930241.png">
+<meta property="article:published_time" content="2022-08-13T09:37:48.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:19.033Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="侧信道攻击">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813175523509.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>侧信道攻击学习笔记1 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          侧信道攻击学习笔记1
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-13 17:37:48" itemprop="dateCreated datePublished" datetime="2022-08-13T17:37:48+08:00">2022-08-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:19" itemprop="dateModified" datetime="2024-10-16T13:19:19+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li>最近入手了块Chipwhisperer-lite，决定先跟着官方教程学习了解侧信道攻击</li>
+<li>New-AE官网：<a target="_blank" rel="noopener" href="https://www.newae.com/">https://www.newae.com/</a></li>
+<li>Chipwhisperer官方GitHub仓库：<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer">https://github.com/newaetech/chipwhisperer</a></li>
+<li>Chipwhisperer软件环境官方安装教程：<a target="_blank" rel="noopener" href="https://chipwhisperer.readthedocs.io/en/latest/index.html">https://chipwhisperer.readthedocs.io/en/latest/index.html</a></li>
+</ul>
+<span id="more"></span>
+
+<h2 id="指令能耗差异"><a href="#指令能耗差异" class="headerlink" title="指令能耗差异"></a>指令能耗差异</h2><ul>
+<li><p>本篇将跟着官方的<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-jupyter">chipwhisperer-jupyter</a>教程sca101的**Lab 2_1A - Instruction Power Differences **学习CPU运行不同指令时消耗的能量差异</p>
+</li>
+<li><p>首先可以看到sca101目录下有三个Lab 2_1A - Instruction Power Differences 的.ipynb文件，其实从后缀就可以看出，第二个是主程序的代码，第一个对应的是拥有Chipwhisperer硬件时可运行的代码，第三个是没有硬件时模拟运行的代码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813175523509.png" alt="image-20220813175523509"></p>
+</li>
+<li><p>打开MAIN的ipynb，可以看到，最前面有提示选择模拟的代码块或者硬件的代码块复制到这个notebook代码中</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813175941844.png" alt="image-20220813175941844"></p>
+</li>
+<li><p>打开HARDWARE的ipynb，可以看到最前面有以下提示，意思是：需要根据你的硬件设备先设置相应平台类型，CWLite和CW1200的SCOPETYPE选择&#39;OPENADC&#39;，CWNANO则选择&#39;CWNANO&#39;；如果目标板为STM32（如：CWLITEARM的目标板就是这个）PLATFORM选择&#39;CWLITE&#39;，如果目标板为XMEGA（如：CWLITEXMEGA的目标板就是这个）则选择&#39;CWLITEXMEGA&#39;</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813180223510.png" alt="image-20220813180223510"></p>
+</li>
+<li><p>这里我的硬件是CWLITEXMEGA所以选择</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SCOPETYPE = <span class="string">&#x27;OPENADC&#x27;</span></span><br><span class="line">PLATFORM = <span class="string">&#x27;CWLITEXMEGA&#x27;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置好后，把所有HARDWARE的ipynb的代码复制到MAIN的ipynb中执行</p>
+</li>
+<li><p>编译目标板固件，上面的设置就是为了编译输出合适的目标板固件</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190104862.png" alt="image-20220813190104862"></p>
+</li>
+<li><p>用USB连接设备，继续往下运行，正常运行会输出Found ChipWhisperer</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190238161.png" alt="image-20220813190238161"></p>
+</li>
+<li><p>给目标板烧录新编译的固件</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190406861.png" alt="image-20220813190406861"></p>
+</li>
+<li><p>再往下就是MAIN ipynb的代码了</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190456892.png" alt="image-20220813190456892"></p>
+</li>
+<li><p>接着可以看到如下提示，意思是，这里只需要关注单个指令的能量消耗，而不关注串口通信的能量消耗，所以需要去&#39;hardware&#x2F;victims&#x2F;firmware&#x2F;simpleserial-base-lab2&#39;目录下修改simpleserial-base.c的代码，找到get_pt函数，删除或者注释调末尾的simpleserial_put调用语句，保存后重新编译并上传至目标板</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190633871.png" alt="image-20220813190633871"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813190913530.png" alt="image-20220813190913530"></p>
+</li>
+<li><p>编译，只需重新执行前面make命令的代码块，即可</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">%%bash -s &quot;$PLATFORM&quot;</span><br><span class="line">cd ../../../hardware/victims/firmware/simpleserial-base-lab2</span><br><span class="line">make PLATFORM=$1 CRYPTO_TARGET=NONE</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后再执行前面的给目标板烧录固件的代码即可</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cw.program_target(scope, prog, <span class="string">&quot;../../../hardware/victims/firmware/simpleserial-base-lab2/simpleserial-base-&#123;&#125;.hex&quot;</span>.<span class="built_in">format</span>(PLATFORM))</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>接着往下执行，可以查看目标板的能量消耗曲线</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813200838496.png" alt="image-20220813200838496"></p>
+</li>
+<li><p>接着往下可以看到如下提示，大意是修改simpleserial-base.c中的代码，让CPU重复执行单一命令20次，看能否从能量消耗曲线中看出该命令所对应的位置，其中需要用&quot;volatile&quot;关键字修饰变量，避免编译器对该代码进行优化（将这些指令直接替换为这些运算的最终结果）。对于不同的目标板，建议选则的指令不一样，如：ARM（STM32）的目标板建议测试乘法运算，XMEGA和AVR则建议测试加法运算（因为这类设备乘法运算消耗更大）</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813201148039.png" alt="image-20220813201148039"></p>
+</li>
+<li><p>按照上面提示在simpleserial-base.c的get_pt函数中添加测试的加法代码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813202109830.png" alt="image-20220813202109830"></p>
+</li>
+<li><p>重新编译并烧录进目标板后，再次画能量消耗图，可以看到如下结果</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813202453123.png" alt="image-20220813202453123"></p>
+</li>
+<li><p>对比上图和一开始的图片，可以看到，上面前面部分明显出现20个尖峰，结合代码可知，这20个尖峰其实就是目标板运算20次A+&#x3D;2所对应的能量消耗</p>
+</li>
+<li><p>再往下可以看到如下提示，大意是，“你可能觉得很奇怪，为什么我们不用一个循环而是复制粘贴一行代码20次。将这个替换为循环你就知道为什么了，<strong>需要注意的是循环的变量同样要用volatile修饰</strong>”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813202903264.png" alt="image-20220813202903264"></p>
+</li>
+<li><p>按照上述提示，将该代码改写为for 循环并用volatile修饰循环计数 i，保存并重新编译上传至目标板</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813203442632.png" alt="image-20220813203442632"></p>
+</li>
+<li><p>再次画出能量消耗图，如下图，可以看到，虽然同样出现20个周期性的峰型，但是对比复制粘贴执行的能量消耗，下图耗时更久，波形更复杂些</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813203554149.png" alt="image-20220813203554149"></p>
+</li>
+<li><p>往下可以看到提示，大意是“你可能觉得很奇怪，为什么循环执行更复制粘贴执行的能量消耗结果不一样？如果你熟悉汇编，你可以去查看simpleserial-base-lab2文件夹下的.lss（编译输出的中间文件）。或者看下面这个C伪代码。正如你所看到的，微控制器比起执行重复粘贴的代码，循环需要做更多的事情（比较大小，循环体，循环计数+1）。如果i的变量不用volatile修饰，那么通常会将循环展开（即将循环优化为复制粘贴的代码），有volatile可以避免编译器进行这项优化。当然展开循环会导致代码块大小增大，所以有时编译器为了优化代码块大小而避免展开循环”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813203853260.png" alt="image-20220813203853260"></p>
+</li>
+<li><p>再往下可以看到如下提示信息，大意是让我们测试高消耗的运算，对于ARM建议测试除法运算，对于AVR&#x2F;XMEGA则建议测试乘法运算</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213322870.png" alt="image-20220813213322870"></p>
+</li>
+<li><p>但是按照提示将+&#x3D;2改为*&#x3D;2后，重新编译并上传目标板后，抓取的能量消耗图与前面相比却并没有太大区别</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213516138.png" alt="image-20220813213516138"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213643346.png" alt="image-20220813213643346"></p>
+</li>
+<li><p>按下面的提示，可以知道，改为复杂运算后，应该会花更多的时间运算而且消耗更多的能量，但是上面*&#x3D;2的与前面+&#x3D;2却并没有太大区别</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813213827759.png" alt="image-20220813213827759"></p>
+</li>
+<li><p>不过想到编译器可能对2的倍数的乘法运算有优化，将乘法优化为移位运算了（如*2优化为&lt;&lt;1），于是把2改为3，重新编译测试，结果一出来，果然乘法消耗明显更大</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813214350672.png" alt="image-20220813214350672"></p>
+</li>
+<li><p>再来试试除法，根据提示的意思是XMEGA中的除法开销会巨大，如下图，下图这其实只是1次除法运算的能量消耗图而不是20次，如此可见XMEGA中的除法消耗的确非常大。同样从单次除法运算中出现多个尖峰可以推测，可以推测XMEGA的除法是循环运算一些简单指令得到的</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/image-20220813214930241.png" alt="image-20220813214930241"></p>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>CPU&#x2F;微控制器执行不同指令会有不同能量消耗和时间消耗</li>
+<li>编译器可能会在编译时对一些代码做一些优化，如：把简单的运算之间替换为运算结果，循环展开等，所以有时候测试某些运算&#x2F;指令的能量消耗时，需要特别留意最终的可执行程序是否被编译器优化过的</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB/" rel="tag"># 侧信道攻击</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/" rel="prev" title="《逆向工程核心原理》学习笔记14">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记14
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/" rel="next" title="侧信道攻击学习笔记2-密码验证的能量分析">
+      侧信道攻击学习笔记2-密码验证的能量分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E8%83%BD%E8%80%97%E5%B7%AE%E5%BC%82"><span class="nav-number">2.</span> <span class="nav-text">指令能耗差异</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '680f0962e0da6031b305e1457d709b06',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

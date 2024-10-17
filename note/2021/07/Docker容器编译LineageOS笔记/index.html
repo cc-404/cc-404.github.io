@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="编译环境 运行内存至少8G，运行内存太小会导致编译过程出现奇怪错误 JDK（本文编译的为cm-14.1，即Android 7.1，因此需要JDK8，Android6及之前的需要更早的JDK版本） 区分大小写的文件系统，MacOS和Windows默认的文件系统不区分大小写，使用不区分大小写文件系统编译Android会出错。docker容器中，建议直接docker里面的目录下编译，而不是挂载宿主机的目">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker容器编译LineageOS笔记">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/07/Docker%E5%AE%B9%E5%99%A8%E7%BC%96%E8%AF%91LineageOS%E7%AC%94%E8%AE%B0/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="编译环境 运行内存至少8G，运行内存太小会导致编译过程出现奇怪错误 JDK（本文编译的为cm-14.1，即Android 7.1，因此需要JDK8，Android6及之前的需要更早的JDK版本） 区分大小写的文件系统，MacOS和Windows默认的文件系统不区分大小写，使用不区分大小写文件系统编译Android会出错。docker容器中，建议直接docker里面的目录下编译，而不是挂载宿主机的目">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-07-30T02:54:20.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:11.070Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="android">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/07/Docker%E5%AE%B9%E5%99%A8%E7%BC%96%E8%AF%91LineageOS%E7%AC%94%E8%AE%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Docker容器编译LineageOS笔记 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/07/Docker%E5%AE%B9%E5%99%A8%E7%BC%96%E8%AF%91LineageOS%E7%AC%94%E8%AE%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Docker容器编译LineageOS笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-07-30 10:54:20" itemprop="dateCreated datePublished" datetime="2021-07-30T10:54:20+08:00">2021-07-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:11" itemprop="dateModified" datetime="2024-10-16T13:19:11+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h4 id="编译环境"><a href="#编译环境" class="headerlink" title="编译环境"></a>编译环境</h4><ul>
+<li><strong>运行内存至少8G</strong>，运行内存太小会导致编译过程出现奇怪错误</li>
+<li>JDK（本文编译的为cm-14.1，即Android 7.1，因此需要JDK8，Android6及之前的需要更早的JDK版本）</li>
+<li><strong>区分大小写的文件系统</strong>，MacOS和Windows默认的文件系统不区分大小写，使用不区分大小写文件系统编译Android会出错。docker容器中，建议直接docker里面的目录下编译，而不是挂载宿主机的目录下编译</li>
+<li>建议使用非root用户编译</li>
+</ul>
+<span id="more"></span>
+
+<h4 id="准备开始"><a href="#准备开始" class="headerlink" title="准备开始"></a>准备开始</h4><ul>
+<li><p>Docker Destop中设置容器内存至少8G，拉取ubuntu镜像</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull ubuntu:20.04</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建并连接到容器</p>
+</li>
+<li><p>安装依赖</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libwxgtk3.0-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev bsdmainutils</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果编译出现缺少libncurses.so.5错误，可在bash下运行<code>sudo apt install libncurses*</code></p>
+</blockquote>
+</li>
+<li><p>安装OpenJDK-8</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install openjdk-8-jdk</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果有其他版本JDK，可以使用update-alternatives切换JDK</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo update-alternatives --config java</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装其他一些常用命令</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install -y wget unzip net-tools inetutils-ping lsof screen adb</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装repo</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> <span class="variable">$HOME</span>/bin</span><br><span class="line">sudo curl https://storage.googleapis.com/git-repo-downloads/repo &gt; <span class="variable">$HOME</span>/bin/repo</span><br><span class="line"><span class="built_in">chmod</span> a+x <span class="variable">$HOME</span>/bin/repo</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在.bashrc或者.zshrc中加入<code>export PATH=$HOME/bin:$​PATH</code></p>
+</li>
+<li><p>创建工作目录</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> -p /media/android</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>初始化</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /media/android</span><br><span class="line">repo init -u git://github.com/LineageOS/android.git -b cm-14.1</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改AOSP源为清华或者其他次级镜像</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi .repo/manifests/default.xml</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将</p>
+  <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">remote</span>  <span class="attr">name</span>=<span class="string">&quot;aosp&quot;</span></span></span><br><span class="line"><span class="tag">	<span class="attr">fetch</span>=<span class="string">&quot;https://android.googlesource.com&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">revision</span>=<span class="string">&quot;refs/tags/android-7.1.2_r36&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改为</p>
+  <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">remote</span>  <span class="attr">name</span>=<span class="string">&quot;aosp&quot;</span></span></span><br><span class="line"><span class="tag">	<span class="attr">fetch</span>=<span class="string">&quot;https://aosp.tuna.tsinghua.edu.cn&quot;</span></span></span><br><span class="line"><span class="tag">	<span class="attr">revision</span>=<span class="string">&quot;refs/tags/android-7.1.2_r36&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>  或者</p>
+  <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">remote</span>  <span class="attr">name</span>=<span class="string">&quot;aosp&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">fetch</span>=<span class="string">&quot;git://ip.to.mirror&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">revision</span>=<span class="string">&quot;refs/tags/android-7.1.2_r36&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这里可以改为用的自己搭建的aosp次级镜像</p>
+</blockquote>
+</li>
+<li><p>LineageOS源也可改为清华的，但这里维持默认github的即可</p>
+</li>
+<li><p>开始同步</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">repo <span class="built_in">sync</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="开始编译"><a href="#开始编译" class="headerlink" title="开始编译"></a>开始编译</h4><ul>
+<li><p>正式开始前还需要获取手机的proprietary文件，而且还需要手机先刷入网上的cm-14.1 rom包。。</p>
+</li>
+<li><p>下载并刷入官方的cm-14.1的包，启动手机进入开发者模式，打开USB调试，并启用网络ADB调试，手机连接到跟docker容器宿主机同一局域网下</p>
+<blockquote>
+<p>获取proprietary的脚本原理是利用adb拉取手机上的文件，而adb可以usb或者网络连接，因此不一定需要usb连接到电脑，所以就不用考虑docker容器中怎么usb连接手机的问题</p>
+</blockquote>
+</li>
+<li><p><strong>手机开发者选项中启用root</strong>（否则部分文件无法获取）</p>
+</li>
+<li><p>docker中adb连接手机，运行以下命令使用通过网络方式连接到手机</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adb connect 192.168.2.148:5555 <span class="comment"># 192.168.2.148:5555改为你的手机adb server地址和端口</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>运行<code>device/厂商/手机代号/extract-files.sh</code>，例如这里编译的为nexus 5</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash device/lge/hammerhead/extract-files.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果没有相应的device文件，需要先运行<code>brunch 手机代号</code>，然后会自动从github上拉取相应的机型的device文件，前提是LineageOS官方github里面有收录这个机型的device文件，否则就得从其他地方自行获取了</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brunch hammerhead</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>实际运行extract-files.sh过程中，发现可能还是会缺一些.so文件，这里测试的就缺少了一个<strong>vendor&#x2F;lib&#x2F;libfrsdk.so</strong>文件，但手机上刷的cm14 ROM后确实没有这个文件，这时候可能就得根据手机代号&#x2F;型号从github或者谷歌找别人弄好的proprietary文件，从那里获取缺失的.so文件</p>
+</li>
+<li><p>例如这里github上刚好找到nexus一个cm14.1的<a target="_blank" rel="noopener" href="https://github.com/shinobizero/proprietary_vendor_lge_hammerhead.git">proprietary_vendor_lge_hammerhead.git</a>，因为版本号一致，所以可以直接用这里面的hammerhead文件夹放到vendor&#x2F;lge&#x2F;下</p>
+</li>
+<li><p>获取完proprietary文件后，运行<code>brunch hammerhead</code>，即可开始编译</p>
+</li>
+</ul>
+<h4 id="编译中遇到的错误及解决"><a href="#编译中遇到的错误及解决" class="headerlink" title="编译中遇到的错误及解决"></a>编译中遇到的错误及解决</h4><hr>
+<ul>
+<li><p>make: [out&#x2F;build-aosp_arm.ninja] Killed</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">frameworks/av/camera/cameraserver/Android.mk:18: Target has integrated cameraserver into mediaserver. This is weakening security measures introduced in 7.0</span><br><span class="line">find: &#x27;/media/android/out/target/common/obj/SHARED_LIBRARIES/libwifi-hal-mock_intermediates&#x27;: No such file or directory</span><br><span class="line">build/core/ninja.mk:167: recipe for target &#x27;out/build-aosp_arm.ninja&#x27; failed</span><br><span class="line">make: *** [out/build-aosp_arm.ninja] Killed</span><br><span class="line"></span><br><span class="line">#### make failed to build some targets (24) ####</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>一个很莫名其妙的错误，一眼看上去不知道错哪，没有明确的报错信息。排了很久，一开始还以为是上面的&quot;find ... No such file or directory&quot;，缺某个文件导致的，最后发现跟这个无关，不管怎样都会报这个。最终发现原因是<strong>运行内存太小</strong>了。一开始编译用的docker容器只分配了2G内存，后来看了这个提问后<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/40925991/error-on-compiling-aosp-make-out-build-aosp-arm-ninja-killed">Error on compiling AOSP: make: out&#x2F;build-aosp_arm.ninja Killed</a>，最后把容器分配的内存调至8G，问题得到解决</p>
+</li>
+</ul>
+<hr>
+<ul>
+<li><p>JACK SSL错误，参考<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039970343">aosp 编译过程中Jack server SSL error 错误解决方法</a></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[ 10% 538/4980] Ensuring Jack server is installed and started</span><br><span class="line">FAILED: setup-jack-server </span><br><span class="line">/bin/bash -c &quot;(prebuilts/sdk/tools/jack-admin install-server prebuilts/sdk/tools/jack-launcher.jar prebuilts/sdk/tools/jack-server-4.11.ALPHA.jar  2&gt;&amp;1 || (exit 0) ) &amp;&amp; (JACK_SERVER_VM_ARGUMENTS=\&quot;-Dfile.encoding=UTF-8 -XX:+TieredCompilation\&quot; prebuilts/sdk/tools/jack-admin start-server 2&gt;&amp;1 || exit 0 ) &amp;&amp; (prebuilts/sdk/tools/jack-admin update server prebuilts/sdk/tools/jack-server-4.11.ALPHA.jar 4.11.ALPHA 2&gt;&amp;1 || exit 0 ) &amp;&amp; (prebuilts/sdk/tools/jack-admin update jack prebuilts/sdk/tools/jacks/jack-4.32.CANDIDATE.jar 4.32.CANDIDATE || exit 47 )&quot;</span><br><span class="line">Jack server already installed in &quot;/home/user/.jack-server&quot;</span><br><span class="line">Communication error with Jack server (35), try &#x27;jack-diagnose&#x27; or see Jack server log</span><br><span class="line">SSL error when connecting to the Jack server. Try &#x27;jack-diagnose&#x27;</span><br><span class="line">SSL error when connecting to the Jack server. Try &#x27;jack-diagnose&#x27;</span><br><span class="line">[ 10% 541/4980] build out/target/product/rk3399_mid/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy</span><br><span class="line">ninja: build stopped: subcommand failed.</span><br><span class="line">22:32:18 ninja failed with: exit status 1</span><br><span class="line"></span><br><span class="line">#### failed to build some targets (01:11 (mm:ss)) ####</span><br><span class="line"></span><br><span class="line">Build android failed!</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>网上有说这个错是端口后&quot;~&#x2F;.jack-server&#x2F;config.properties&quot;和&quot;~&#x2F;.jack-settings&quot;里面端口号不一致的原因，但我检查后发现端口号一致</p>
+</li>
+<li><p>最后按<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039970343">aosp 编译过程中Jack server SSL error 错误解决方法</a>这篇文章修改&#x2F;etc&#x2F;java-8-openjdk&#x2F;security&#x2F;java.security，取消禁用TLSv1, TLSv1.1，问题解决</p>
+</li>
+<li><p>原因: 编译时用的是open-jdk 8，默认禁用了TLSv1, TLSv1.1，</p>
+</li>
+<li><p>解决办法：修改&#x2F;etc&#x2F;java-8-openjdk&#x2F;security&#x2F;java.security，找到&quot;jdk.tls.disabledAlgorithms&quot;，并改为以下内容</p>
+  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">jdk.tls.disabledAlgorithms</span>=SSLv3, RC4, DES, MD5withRSA, \</span><br><span class="line">    DH keySize &lt; 1024, EC keySize &lt; 224, 3DES_EDE_CBC, anon, NULL, \</span><br><span class="line">    include jdk.disabled.namedCurves</span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<ul>
+<li><p>OOM错误（Out of memory error）参考<a target="_blank" rel="noopener" href="https://www.cnblogs.com/zhouliquan/p/7491976.html">编译报错：Out of memory error</a></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[  1% 250/22713] Building with Jack: /med...work_intermediates/with-local/classes.dex</span><br><span class="line">FAILED: /bin/bash /media/android/out/target/common/obj/JAVA_LIBRARIES/framework_intermediates/with-local/classes.dex.rsp</span><br><span class="line">Out of memory error (version 1.2-rc4 &#x27;Carnac&#x27; (298900 f95d7bdecfceb327f9d201a1348397ed8a843843 by android-jack-team@google.com)).</span><br><span class="line">GC overhead limit exceeded.</span><br><span class="line">Try increasing heap size with java option &#x27;-Xmx&lt;size&gt;&#x27;.</span><br><span class="line">Warning: This may have produced partial or corrupted output.</span><br><span class="line">ninja: build stopped: subcommand failed.</span><br><span class="line">make: *** [build/core/ninja.mk:152: ninja_wrapper] Error 1</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改 prebuilts&#x2F;sdk&#x2F;tools&#x2F;jack-admin 文件，增加 &#39;-Xmx&lt;size&gt;&#39;</p>
+  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-      <span class="attr">JACK_SERVER_COMMAND</span>=<span class="string">&quot;java -XX:MaxJavaStackTraceDepth=-1 -Djava.io.tmpdir=$TMPDIR $JACK_SERVER_VM_ARGUMENTS -cp $LAUNCHER_JAR $LAUNCHER_NAME&quot;</span></span><br><span class="line">+      <span class="attr">JACK_SERVER_COMMAND</span>=<span class="string">&quot;java -XX:MaxJavaStackTraceDepth=-1 -Djava.io.tmpdir=$TMPDIR $JACK_SERVER_VM_ARGUMENTS -Xmx4G -cp $LAUNCHER_JAR $LAUNCHER_NAME&quot;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改完后关闭已有的jack server</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./prebuilts/sdk/tools/jack-admin kill-server</span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<ul>
+<li><p>Checking API错误</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">You have tried to change the API from what has been previously approved.</span><br><span class="line"></span><br><span class="line">To make these errors go away, you have two choices:</span><br><span class="line">   1) You can add &quot;@hide&quot; javadoc comments to the methods, etc. listed in the</span><br><span class="line">      errors above.</span><br><span class="line"></span><br><span class="line">   2) You can update current.txt by executing the following command:</span><br><span class="line">         make update-api</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>原因在修改完系统Api或部分公共Api后（常见于修改Intent.java、KeyEvent.java等等），可以按提示运行<code>make update-api</code>，然后重新编译</p>
+</li>
+</ul>
+<hr>
+<h4 id="编译AUPK"><a href="#编译AUPK" class="headerlink" title="编译AUPK"></a>编译AUPK</h4><ul>
+<li><p>AUPK：官方github仓库<a target="_blank" rel="noopener" href="https://github.com/FeJQ/AUPK.git">https://github.com/FeJQ/AUPK.git</a></p>
+</li>
+<li><p>git 拉取AUPK代码</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/FeJQ/AUPK.git</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>因为AUPK是基于android7.1的，所以这里可以用cp命令拷贝art和frameworks文件夹到android源码文件夹下</p>
+</li>
+<li><p>运行</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make update-api</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重新编译rom</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brunch hammerhead</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="刷入ROM"><a href="#刷入ROM" class="headerlink" title="刷入ROM"></a>刷入ROM</h4><ul>
+<li><p>将out&#x2F;target&#x2F;product&#x2F;手机代号&#x2F;目录下的lineage-14.1-*-UNOFFICIAL-hammerhead.zip压缩包传至手机，然后用twrp等第三方recovery双清后刷入即可</p>
+</li>
+<li><p>adb重启至recovery模式</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adb reboot recovery</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h4><ul>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/40925991/error-on-compiling-aosp-make-out-build-aosp-arm-ninja-killed">Error on compiling AOSP: make: out&#x2F;build-aosp_arm.ninja Killed</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039970343">aosp 编译过程中Jack server SSL error 错误解决方法</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039970343">aosp 编译过程中Jack server SSL error 错误解决方法</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/zhouliquan/p/7491976.html">编译报错：Out of memory error</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/FeJQ/AUPK.git">https://github.com/FeJQ/AUPK.git</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/shinobizero/proprietary_vendor_lge_hammerhead.git">https://github.com/shinobizero/proprietary_vendor_lge_hammerhead.git</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/android/" rel="tag"># android</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/" rel="prev" title="Discuz简单验证码识别">
+      <i class="fa fa-chevron-left"></i> Discuz简单验证码识别
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/tutorial/2021/08/Android%E4%BD%BF%E7%94%A8gdisk%E8%B0%83%E6%95%B4system%E5%88%86%E5%8C%BA%E5%A4%A7%E5%B0%8F/" rel="next" title="Android使用gdisk调整system分区大小">
+      Android使用gdisk调整system分区大小 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E7%8E%AF%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">编译环境</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">准备开始</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E7%BC%96%E8%AF%91"><span class="nav-number">3.</span> <span class="nav-text">开始编译</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E4%B8%AD%E9%81%87%E5%88%B0%E7%9A%84%E9%94%99%E8%AF%AF%E5%8F%8A%E8%A7%A3%E5%86%B3"><span class="nav-number">4.</span> <span class="nav-text">编译中遇到的错误及解决</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91AUPK"><span class="nav-number">5.</span> <span class="nav-text">编译AUPK</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%B7%E5%85%A5ROM"><span class="nav-number">6.</span> <span class="nav-text">刷入ROM</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="nav-number">7.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '61b54bbe06ec2b81db9168c12263805f',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

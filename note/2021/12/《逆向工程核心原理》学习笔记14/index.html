@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第二十五章通过修改PE文件加载DLL练习文件 从https:&#x2F;&#x2F;github.com&#x2F;reversecore&#x2F;book下载对应的章节的可执行文件TextView.exe和myhack3.dll，当然也可以选择下载两者的源码，用vs重新编译，这里直接下载可执行文件进行练习">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记14">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第二十五章通过修改PE文件加载DLL练习文件 从https:&#x2F;&#x2F;github.com&#x2F;reversecore&#x2F;book下载对应的章节的可执行文件TextView.exe和myhack3.dll，当然也可以选择下载两者的源码，用vs重新编译，这里直接下载可执行文件进行练习">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211223165038607.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211224100929941.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211224104149591.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220117234418434.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118001933169.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118002541976.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118153343389.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118160616195.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118161019282.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118161414168.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118162149707.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118163832853.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118172035434.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118172249101.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/2022-01-18.5.23.56.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118174350752.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118174728225.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118174933883.png">
+<meta property="article:published_time" content="2021-12-23T08:36:21.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:14.758Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211223165038607.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记14 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记14
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-23 16:36:21" itemprop="dateCreated datePublished" datetime="2021-12-23T16:36:21+08:00">2021-12-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:14" itemprop="dateModified" datetime="2024-10-16T13:19:14+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第二十五章"><a href="#逆向工程核心原理第二十五章" class="headerlink" title="逆向工程核心原理第二十五章"></a>逆向工程核心原理第二十五章</h3><h4 id="通过修改PE文件加载DLL"><a href="#通过修改PE文件加载DLL" class="headerlink" title="通过修改PE文件加载DLL"></a>通过修改PE文件加载DLL</h4><h5 id="练习文件"><a href="#练习文件" class="headerlink" title="练习文件"></a>练习文件</h5><ul>
+<li>从<a target="_blank" rel="noopener" href="https://github.com/reversecore/book">https://github.com/reversecore/book</a>下载对应的章节的可执行文件TextView.exe和myhack3.dll，当然也可以选择下载两者的源码，用vs重新编译，这里直接下载可执行文件进行练习</li>
+</ul>
+<span id="more"></span>
+
+<h5 id="TextView-exe"><a href="#TextView-exe" class="headerlink" title="TextView.exe"></a>TextView.exe</h5><ul>
+<li><p>使用PEView工具查看TextView.exe可执行文件的IDT（Import Directory Table，导入目录表），如下图，可以看到TextView.exe直接导入的DLL文件为KERNEL32.dll、USER32.dll、GDI32.dll、SHELL32.dll</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211223165038607.png" alt="image-20211223165038607"></p>
+</li>
+<li><p>修改思路：如上图所示，PE文件导入的DLL信息以结构体列表的形式存在IDT中。只要将myhack3.dll添加到列表尾部就可以了。当然在此之前需要确认一下IDT中有无足够空间。</p>
+</li>
+<li><p>查看IDT是否有足够空间：首先使用PEView查看TextView.exe的IDT地址（PE文件头的IMAGE_OPTIONAL_HEADER结构体中导入表RVA即为IDT的RVA），可以看到IDT的地址（RVA）为84CC，大小为64h</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211224100929941.png" alt="image-20211224100929941"></p>
+</li>
+<li><p>接下来在PEView中切换RVA为基址视图，查看RVA 84CC的IDT，如下图，可以看到，TextView.exe存在于.rdata节区，</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20211224104149591.png" alt="image-20211224104149591"></p>
+</li>
+<li><p>在PEView工具栏中将视图改为File Offset，可以看到IDT的文件偏移为76CC</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220117234418434.png" alt="image-20220117234418434"></p>
+</li>
+<li><p>用HEdit找到76CC地址处，如下图所示，IDT的文件偏移为76CC～772F，整个大小为64字节，共有5个结构体，其中最后一个为NULL结构体。IDT尾部存在其他数据，没有足够空间来添加myhack3.dll的IID结构体</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118001933169.png" alt="image-20220118001933169"></p>
+</li>
+</ul>
+<h5 id="移动IDT"><a href="#移动IDT" class="headerlink" title="移动IDT"></a>移动IDT</h5><ul>
+<li><p>这种情况，我们可以把整个IDT转移到其他更广阔的位置，然后再添加新的IID。确定移动的目标位置时，可以使用下面的三种方式：</p>
+<ul>
+<li>查找文件中的空白区域</li>
+<li>增加文件最后一个节区的大小</li>
+<li>在文件末尾添加新的节区</li>
+</ul>
+</li>
+<li><p>首先尝试第一种方法，即查找文件中的空白区域。如下图所示，可以看到.rdata节区尾部恰好存在大片空白区域（一般来说，节区或文件末尾都存在空白区域，PE文件中这种空白区域称为Null-Padding区域）</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118002541976.png" alt="image-20220118002541976"></p>
+</li>
+<li><p>接下来只要把原IDT移动到该Null-Padding区域（RVA：8C60～8DFF）中合适位置即可。在此之前，先要确认一下该区域（RVA：8C60～8DFF）是否全是空白可用区域（Null-Padding）。如下图所示：从节区头信息中可知，.rdata在磁盘文件与内存中的大小是不同的，.rdata在磁盘文件中的大小为2E00，而文件执行后加载到内存时，程序实际使用的数据大小仅为2C56，剩余未被使用的区域大小为1AA（2E00-2C56）。在这段空白区域创建IDT不会有什么问题。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118153343389.png" alt="image-20220118153343389"></p>
+</li>
+<li><p>接下来，我们将在RVA:8C60（RAW: 7E60）位置创建新的IDT</p>
+</li>
+</ul>
+<h4 id="修改TextView-exe"><a href="#修改TextView-exe" class="headerlink" title="修改TextView.exe"></a>修改TextView.exe</h4><ul>
+<li><p>修改导入表的RVA值，IMAGE_OPTIONAL_HEADER的导入表结构体成员用来指出IDT的位置（RVA）与大小，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118160616195.png" alt="image-20220118160616195"></p>
+</li>
+<li><p>使用HEdit将原RVA：84CC改为新的RVA：8C60，并将Size（IDT结构体大小）的64改为78</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118161019282.png" alt="image-20220118161019282"></p>
+</li>
+</ul>
+<h5 id="删除绑定导入表"><a href="#删除绑定导入表" class="headerlink" title="删除绑定导入表"></a>删除绑定导入表</h5><ul>
+<li><p>BOUND IMPORT TABLE（绑定导入表）是一种提高DLL加载速度的技术，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118161414168.png" alt="image-20220118161414168"></p>
+</li>
+<li><p>若想要正常导入myhack3.dll，需要向绑定导入表添加信息。但这个绑定导入表是个可选项，不是必须存在的，所以可删除（修改其值为0即可），而且绑定导入表完全不存在也没关系，但若存在，且其信息记录错误，则会在程序运行时引发错误。</p>
+</li>
+</ul>
+<h5 id="创建新的IDT"><a href="#创建新的IDT" class="headerlink" title="创建新的IDT"></a>创建新的IDT</h5><ul>
+<li><p>先使用HEdit复制原IDT（RVW: 76CC～772F），然后粘贴到IDT的新位置（RAW：7E80），如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118162149707.png" alt="image-20220118162149707"></p>
+</li>
+<li><p>在新IDT尾部（RAW：7EB0）添加与myhack3.dll对应的IID</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118163832853.png" alt="image-20220118163832853"></p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_IMPORT_DESCRIPTOR</span> &#123;</span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">        DWORD   Characteristics;            <span class="comment">// </span></span><br><span class="line">        DWORD   OriginalFirstThunk;         <span class="comment">// 00008D00 =&gt; RVA to INT</span></span><br><span class="line">    &#125;;</span><br><span class="line">    DWORD   TimeDateStamp;                  <span class="comment">// 0</span></span><br><span class="line"></span><br><span class="line">    DWORD   ForwarderChain;                 <span class="comment">// 0</span></span><br><span class="line">    DWORD   Name;                           <span class="comment">// 00008D10 =&gt; RVA，指向dll名字，该名字以0结尾</span></span><br><span class="line">    DWORD   FirstThunk;                     <span class="comment">// 00008D20 =&gt; RVA，指向IMAGE_THUNK_DATA结构数组</span></span><br><span class="line">&#125; IMAGE_IMPORT_DESCRIPTOR;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h5 id="设置Name、INT、IAT"><a href="#设置Name、INT、IAT" class="headerlink" title="设置Name、INT、IAT"></a>设置Name、INT、IAT</h5><ul>
+<li><p>前面添加的IID结构体成员拥有指向其他数据结构（INT、Name、IAT）的RVA值。因此，必须准确设置这些数据才能保证修改后的TextView.exe文件正常运行。由前面设置可知INT、Name、IAT的RVA&#x2F;RAW的值，整理如下表所示</p>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">RVA</th>
+<th align="center">RAW</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">INT</td>
+<td align="center">8D00</td>
+<td align="center">7F00</td>
+</tr>
+<tr>
+<td align="center">Name</td>
+<td align="center">8D10</td>
+<td align="center">7F10</td>
+</tr>
+<tr>
+<td align="center">IAT</td>
+<td align="center">8D20</td>
+<td align="center">7F20</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>这些地址（RVA：8D00，8D10，8D20）就位于新的IDT下方（这里这些RVA可以选择在其他位置）。如下图，用HEdit在7F00、7F10、7F20、7F30输入相应的值</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118172035434.png" alt="image-20220118172035434"></p>
+</li>
+<li><p>用PEView打开查看该区域，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118172249101.png" alt="image-20220118172249101"></p>
+</li>
+<li><p>下面讲解显示的各值意义<img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/2022-01-18.5.23.56.png" alt="2022-01-18.5.23.56"></p>
+</li>
+<li><p>8CB0地址处存在着myhack3.dll的IID结构体，其中3个主要成员（RVA of INT、RVA of Name、RVA of IAT）的值分别是实际INT、Name、IAT的指针</p>
+</li>
+<li><p>INT（Import Name Table，导入名称表）是RVA数组，数组的各个元素都是一个RVA地址，该地址由导入函数的Ordinal（2个字节）+ 函数名结构体组成，数组的末尾为NULL。上图中有一个元素，其值为8D30，该地址处是要导入的函数的Ordinal（2个字节）与函数名称字符串（&quot;dummy&quot;）</p>
+</li>
+<li><p>Name是包含导入函数的DLL文件名称字符串，在8D10地址处可以看到&quot;myhack3.dll&quot;字符串</p>
+</li>
+<li><p>IAT也是RVA数组，各元素既可以拥有与INT相同的值，也可以拥有其他不同值（若INT数据准确，IAT也可以拥有其他不同值）。实际运行时，PE装载器会将虚拟内存中的IAT替换为实际函数的地址。</p>
+</li>
+</ul>
+<h5 id="修改IAT节区的属性值"><a href="#修改IAT节区的属性值" class="headerlink" title="修改IAT节区的属性值"></a>修改IAT节区的属性值</h5><ul>
+<li><p>加载PE文件到内存时，PE装载器会修改IAT，写入函数的实际地址，所以相关节区一定要拥有WRITE（可写）属性。只有这样，PE装载器才能正常进行写入操作。使用PE View查看.rdata节区头，如下图所示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118174350752.png" alt="image-20220118174350752"></p>
+</li>
+<li><p>向原属性值（Characteristics）40000040添加IMAGE_SCN_MEM_WRITE（80000000）属性值。执行bit OR运算，最终属性值变为C0000040。如下图所示，使用HEdit修改该处的值</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118174728225.png" alt="image-20220118174728225"></p>
+</li>
+<li><p>至此完成了所有修改，打开TextView.exe可以看到TextView.exe成功加载myhack3.dll，myhack3.dll被加载后会自动下载指定网站的index.html，然后由TextView.exe显示</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B014/image-20220118174933883.png" alt="image-20220118174933883"></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B013/" rel="prev" title="《逆向工程核心原理》学习笔记13">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记13
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/" rel="next" title="侧信道攻击学习笔记1">
+      侧信道攻击学习笔记1 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%BA%94%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第二十五章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E4%BF%AE%E6%94%B9PE%E6%96%87%E4%BB%B6%E5%8A%A0%E8%BD%BDDLL"><span class="nav-number">1.1.</span> <span class="nav-text">通过修改PE文件加载DLL</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%83%E4%B9%A0%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.1.</span> <span class="nav-text">练习文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#TextView-exe"><span class="nav-number">1.1.2.</span> <span class="nav-text">TextView.exe</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8IDT"><span class="nav-number">1.1.3.</span> <span class="nav-text">移动IDT</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9TextView-exe"><span class="nav-number">1.2.</span> <span class="nav-text">修改TextView.exe</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E7%BB%91%E5%AE%9A%E5%AF%BC%E5%85%A5%E8%A1%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">删除绑定导入表</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%96%B0%E7%9A%84IDT"><span class="nav-number">1.2.2.</span> <span class="nav-text">创建新的IDT</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEName%E3%80%81INT%E3%80%81IAT"><span class="nav-number">1.2.3.</span> <span class="nav-text">设置Name、INT、IAT</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9IAT%E8%8A%82%E5%8C%BA%E7%9A%84%E5%B1%9E%E6%80%A7%E5%80%BC"><span class="nav-number">1.2.4.</span> <span class="nav-text">修改IAT节区的属性值</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '9748f7ea25fa61a25a05aa87cecba125',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

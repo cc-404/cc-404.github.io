@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 使用前面学习了那么多侧信道攻击的内容，是时候实战一波了  本文这道题来自https:&#x2F;&#x2F;github.com&#x2F;Riscure&#x2F;Rhme-2016的piece_of_scake，下图为这题的提示信息     本文大部分内容基于这个视频中对这道题的解法，很不错的视频，值得一看：https:&#x2F;&#x2F;www.youtube.com&#x2F;watch?v&#x3D;FktI4qSjzaE&amp;list&#x3D;PLhixgUqwRT">
+<meta property="og:type" content="article">
+<meta property="og:title" content="侧信道攻击伪实战-分析一道硬件CTF题">
+<meta property="og:url" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 使用前面学习了那么多侧信道攻击的内容，是时候实战一波了  本文这道题来自https:&#x2F;&#x2F;github.com&#x2F;Riscure&#x2F;Rhme-2016的piece_of_scake，下图为这题的提示信息     本文大部分内容基于这个视频中对这道题的解法，很不错的视频，值得一看：https:&#x2F;&#x2F;www.youtube.com&#x2F;watch?v&#x3D;FktI4qSjzaE&amp;list&#x3D;PLhixgUqwRT">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903214212850.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/1.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903222608291.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/3.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/4.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/5.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903214212850.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904105456498.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904141218312.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904141520510.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904141951653.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904142218949.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904142343167.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904142623815.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904143319351.png">
+<meta property="article:published_time" content="2022-09-03T13:23:31.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:18.635Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="侧信道攻击">
+<meta property="article:tag" content="DPA">
+<meta property="article:tag" content="CPA">
+<meta property="article:tag" content="CTF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903214212850.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>侧信道攻击伪实战-分析一道硬件CTF题 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          侧信道攻击伪实战-分析一道硬件CTF题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-03 21:23:31" itemprop="dateCreated datePublished" datetime="2022-09-03T21:23:31+08:00">2022-09-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:18" itemprop="dateModified" datetime="2024-10-16T13:19:18+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>使用前面学习了那么多侧信道攻击的内容，是时候实战一波了</p>
+</li>
+<li><p>本文这道题来自<a target="_blank" rel="noopener" href="https://github.com/Riscure/Rhme-2016">https://github.com/Riscure/Rhme-2016</a>的<strong>piece_of_scake</strong>，下图为这题的提示信息</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903214212850.png" alt="image-20220903214212850"></p>
+</li>
+<li><p>本文大部分内容基于这个视频中对这道题的解法，很不错的视频，值得一看：<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=FktI4qSjzaE&list=PLhixgUqwRTjwNaT40TqIIagv3b4_bfB7M&index=14">https://www.youtube.com/watch?v=FktI4qSjzaE&list=PLhixgUqwRTjwNaT40TqIIagv3b4_bfB7M&amp;index&#x3D;14</a></p>
+</li>
+<li><p>与上面提到的视频不同，这里为了方便起见使用的硬件为用面包板构造的Arduino最小系统，这样做的好处在于接电阻、接线和拆器件方便</p>
+</li>
+<li><p>最近更新了关于这道CTF题的另一篇文章，可供参考：<a href="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/" title="CW308T-AVR使用笔记">CW308T-AVR使用笔记</a></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>将上一篇中构造的Arduino直接拿过来用，但有个地方需要稍作调整，将一个20Ω的电阻与给Atmega328P 供电的GND串联，用于给ChipWhisperer-Lite测电压</p>
+</li>
+<li><p>为什么不连Vcc而连GND？因为实际使用中发现貌似无法避免ChipWhisperer-Lite GND与供电端的GND相连，这样相连的情况下把20Ω电阻接Vcc上，再用ChipWhisperer-Lite测电压，就会出现短路，这种情况貌似有个专业术语叫&quot;Ground Loop&quot;</p>
+</li>
+<li><p>如下图，把ChipWhisperer-Lite当作电压表，把Atmega328P和其它器件整体看成一个大电阻，如果把20Ω接在Vcc端，并且ChipWhisperer-Lite又与Atmega328P共地的情况下，就会使Atmega328P被短路了。实测按下图接法，芯片无法正常工作且20Ω电阻将发烫。</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/1.png" alt="1"></p>
+</li>
+<li><p>因为找不到好的解决方法，于是改为20Ω电阻接在电源的GND出，更改后的电路示意图，如下图所示，这样就避免了将Atmega328P芯片短路，电阻也不会发烫</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903222608291.png" alt="image-20220903222608291"></p>
+</li>
+<li><p>下图为实际电路接线图，chipwhisperer-lite用一个sma转鳄鱼夹将一个20Ω来测电阻两端电压（试过用sma转bnc连接示波器的x1探头，但是效果不太行，可能是阻抗的问题）</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/3.png" alt="3"></p>
+</li>
+<li><p>下图为chipwhipserer-lite中引出来的线，这里只引出来了TIO4（chipwhipserer-lite正面朝上的情况下，20PIN下面的那排左数第3针脚即为TIO4），用于设置触发信号的探针</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/4.png" alt="4"></p>
+</li>
+<li><p>什么是TIO4？- 这得跟chipwhisperer的官方文档有关，chipwhisperer-lite主要有TIO1、TIO2、TIO3、TIO4这四个针脚可用于设置触发信号（其中TIO1和TIO2默认为Rx和Tx，TIO4默认为触发信号的输入），更多细节请看官方文档<a target="_blank" rel="noopener" href="https://chipwhisperer.readthedocs.io/en/latest/scope-api.html">https://chipwhisperer.readthedocs.io/en/latest/scope-api.html</a></p>
+</li>
+<li><p>如下图所示，chipwhisperer-lite的背面有TIO1、TIO2、TIO3、TIO4的定义，所以只有用万用表量一下，看这4个针脚跟20PIN座子的哪几个针脚相连即可知道，哪个是Rx、哪个是Tx和哪个是触发信号的输入</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/5.png" alt="5"></p>
+</li>
+<li><p>接下来为Atmega328p刷入硬件CTF的题目，如果搭建的最新系统可以自动Reset并正常通过USB转UART上传程序，那么可以用下面的命令上传（只需修改USB转UART设备）</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">avrdude  -v -c arduino -p atmega328p -P /dev/cu.wchusbserial1410 -b115200 -u -V -U flash:w:piece_of_scake.hex</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果不能通过USB转UART上传程序，那么可以用上一篇的Arduino Uno当作ISP编程器，为Atmega328p烧录固件</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">avrdude -p m328p -P /dev/cu.usbmodem14201 -c avrisp -b 19200 -U flash:w:piece_of_scake.hex</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>上传好固件后，就可以先来测试，这里使用python的pyserial包来使用串口</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pyserial</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>跟据题目提示，使用&quot;e&quot;+ 16 bytes即可加密，</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220903214212850.png" alt="image-20220903214212850"></p>
+</li>
+<li><p>如下图所示，设置好选用的设备名称和波特率即可用write和read方法来与芯片进行串口通信，可以看到使用&quot;e&quot;+16个0x01加密返回结果为&quot;5cf473073f0a0940be290224ca495b90&quot;。如果格式不对将没有任何响应</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904105456498.png" alt="image-20220904105456498"></p>
+</li>
+<li><p>实际使用过程中可以发现连接在Atmega329P的19引脚和22引脚的二极管会在正确发送指令后亮一下，因此可以用chipwhipserer的TIO4与Atmega329P19引脚相连来作为触发信号的输入</p>
+</li>
+<li><p>设置好触发信号后，就可以开始写代码，用chipwhipserer-lite来抓取能量迹，正式开始之前，建议把面包板上的电容都去掉（因为电容有滤波效果，所以会影响抓取的能量迹波形）。而且建议给Arduino最小系统独立供电（串联的电阻较大时，靠笔记本供电，会电压不足），笔记本电脑拔掉充电头（电脑充电状态会有杂峰影响）</p>
+</li>
+<li><p>接下来照猫画虎，将之前侧信道攻击学习的前面部分的代码复制过来，并稍作修改，如下图所示，这里还是使用USB转UART作为串口通信（虽然chipwhisperer-lite有Rx和Tx，但是chipwhisperer-lite是3.3v的，而atmega328p是5v的，所以两者不能直接通信）</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> serial</span><br><span class="line"></span><br><span class="line">SCOPE=<span class="string">&quot;OPENADC&quot;</span></span><br><span class="line">PLATFORM=<span class="string">&quot;CWLITEXMEGA&quot;</span></span><br><span class="line">CRYPTO_TARGET=<span class="string">&quot;TINYAES128C&quot;</span></span><br><span class="line">VERSION=<span class="string">&quot;HARDWARE&quot;</span></span><br><span class="line"></span><br><span class="line">%run <span class="string">&quot;../../Setup_Scripts/Setup_Generic.ipynb&quot;</span></span><br><span class="line"></span><br><span class="line">s=serial.Serial(<span class="string">&#x27;/dev/cu.wchusbserial1410&#x27;</span>, <span class="number">19200</span>, timeout=<span class="number">0.5</span>)</span><br><span class="line"></span><br><span class="line">proj = cw.create_project(<span class="string">&quot;test&quot;</span>, overwrite=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904141218312.png" alt="image-20220904141218312"></p>
+</li>
+<li><p>接着设置chipwhisperer-lite的触发信号输入引脚，触发模式，采样频率等，具体可查看官方文档，下面的设置为使用TIO4引脚作为触发信号，单次采样5000个点的数据，还有采样频率&quot;clkgen_x4&quot;（如果为&quot;clkgen_x1&quot;，那么将会用更低的频率采样）</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># scope.adc.basic_mode = &quot;falling_edge&quot;</span></span><br><span class="line"><span class="comment"># scope.adc.basic_mode = &quot;high&quot;</span></span><br><span class="line"></span><br><span class="line">scope.adc.samples = <span class="number">5000</span></span><br><span class="line">scope.clock.adc_src = <span class="string">&quot;clkgen_x4&quot;</span></span><br><span class="line"></span><br><span class="line">scope.trigger.triggers = <span class="string">&quot;tio4&quot;</span></span><br><span class="line"></span><br><span class="line">scope.adc.offset=<span class="number">0</span></span><br><span class="line"></span><br><span class="line">scope.adc.presamples=<span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904141520510.png" alt="image-20220904141520510"></p>
+</li>
+<li><p>接着是，开始抓取能量迹，第一个key可以随意设置（主要用于后面画图高亮显示，如果一开始不知道真正key可以用16个00代替）</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> chipwhisperer</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> tqdm <span class="keyword">import</span> tnrange</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line">reset_target(scope)</span><br><span class="line"></span><br><span class="line">ktp = cw.ktp.Basic()</span><br><span class="line">key, text = ktp.<span class="built_in">next</span>()</span><br><span class="line"><span class="comment"># key=bytes([0]*16)</span></span><br><span class="line">key=<span class="built_in">bytes</span>([<span class="number">0xaf</span>, <span class="number">0x23</span>, <span class="number">0xd5</span>, <span class="number">0x45</span>, <span class="number">0xa0</span>, <span class="number">0xea</span>, <span class="number">0xe6</span>, <span class="number">0xa0</span>, <span class="number">0x74</span>, <span class="number">0x65</span>, <span class="number">0x96</span>, <span class="number">0xca</span>, <span class="number">0xce</span>, <span class="number">0x51</span>, <span class="number">0xf0</span>, <span class="number">0xf7</span>])</span><br><span class="line">target.simpleserial_write(<span class="string">&#x27;k&#x27;</span>, key)</span><br><span class="line">trace_array = []</span><br><span class="line">textin_array = []</span><br><span class="line">textout_array=[]</span><br><span class="line"></span><br><span class="line">N = <span class="number">500</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> tnrange(N, desc=<span class="string">&#x27;Capturing traces&#x27;</span>):</span><br><span class="line">    </span><br><span class="line">    scope.arm()</span><br><span class="line">    s.write(<span class="string">b&quot;e&quot;</span>+<span class="built_in">bytes</span>(text))</span><br><span class="line">    ret = scope.capture()</span><br><span class="line">    r=s.read_all()</span><br><span class="line">    <span class="keyword">while</span> <span class="built_in">len</span>(r)==<span class="number">0</span>:</span><br><span class="line">        r=s.read_all()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ret:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Target timed out!&quot;</span>)</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    trace = scope.get_last_trace()</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(r.<span class="built_in">hex</span>())</span><br><span class="line">    trace_array.append(trace)</span><br><span class="line">    proj.traces.append(chipwhisperer.common.traces.Trace(trace, text, r,key))</span><br><span class="line">    textin_array.append(text)</span><br><span class="line">    key, text = ktp.<span class="built_in">next</span>()</span><br><span class="line">proj.save()    </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904141951653.png" alt="image-20220904141951653"></p>
+</li>
+<li><p>抓完能量迹后，可以话出一条能量迹，查看效果，如下图所示</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">%matplotlib notebook</span><br><span class="line"><span class="keyword">import</span> matplotlib.pylab <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">plt.figure()</span><br><span class="line">plt.plot(trace_array[<span class="number">0</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904142218949.png" alt="image-20220904142218949"></p>
+</li>
+<li><p>最后就是执行CPA攻击，可以看到最终结果为&quot;0xaf, 0x23, 0xd5, 0x45, 0xa0, 0xea, 0xe6, 0xa0, 0x74, 0x65, 0x96, 0xca, 0xce, 0x51, 0xf0, 0xf7&quot;</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> chipwhisperer <span class="keyword">as</span> cw</span><br><span class="line"><span class="keyword">import</span> chipwhisperer.analyzer <span class="keyword">as</span> cwa</span><br><span class="line"></span><br><span class="line">leak_model = cwa.leakage_models.sbox_output</span><br><span class="line">attack = cwa.cpa(proj, leak_model)</span><br><span class="line">cb = cwa.get_jupyter_callback(attack)</span><br><span class="line">results = attack.run(cb, <span class="number">10</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904142343167.png" alt="image-20220904142343167"></p>
+</li>
+<li><p>验证密钥是否正确，如下图所示，使用标准AES，用侧信道攻击得到的密钥，加密同样的数据[1]*16得到的结果同样为&quot;5cf473073f0a0940be290224ca495b90&quot;，说明&quot;0xaf, 0x23, 0xd5, 0x45, 0xa0, 0xea, 0xe6, 0xa0, 0x74, 0x65, 0x96, 0xca, 0xce, 0x51, 0xf0, 0xf7&quot;是正确的AES密钥</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> Crypto.Cipher <span class="keyword">import</span> AES</span><br><span class="line"></span><br><span class="line">key=<span class="built_in">bytes</span>([<span class="number">0xaf</span>, <span class="number">0x23</span>, <span class="number">0xd5</span>, <span class="number">0x45</span>, <span class="number">0xa0</span>, <span class="number">0xea</span>, <span class="number">0xe6</span>, <span class="number">0xa0</span>, <span class="number">0x74</span>, <span class="number">0x65</span>, <span class="number">0x96</span>, <span class="number">0xca</span>, <span class="number">0xce</span>, <span class="number">0x51</span>, <span class="number">0xf0</span>, <span class="number">0xf7</span>])</span><br><span class="line">aes=AES.new(key, AES.MODE_ECB)</span><br><span class="line"></span><br><span class="line">data=<span class="built_in">bytes</span>([<span class="number">1</span>]*<span class="number">16</span>)</span><br><span class="line">aes.encrypt(data).<span class="built_in">hex</span>()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904142623815.png" alt="image-20220904142623815"></p>
+</li>
+<li><p>至此成功利用侧信道攻击解决了这道CTF</p>
+</li>
+</ul>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><ul>
+<li><p>如果不去掉电容会怎样？- 如下图，抓取的波形的振幅会减小，恢复正确的密钥需要的能量迹更多，去掉电容只需200条左右能量迹即可恢复正确密钥，但不去掉密钥则需要500条左右甚至更多</p>
+<p>  <img src="/tutorial/2022/09/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E4%BC%AA%E5%AE%9E%E6%88%98-%E5%88%86%E6%9E%90%E4%B8%80%E9%81%93%E7%A1%AC%E4%BB%B6CTF%E9%A2%98/image-20220904143319351.png" alt="image-20220904143319351"></p>
+</li>
+<li><p>为什么串联20Ω大小的阻值，其它大小可以吗？- 理论上可以，试过1Ω的电阻（但效果不行），试过50Ω（分压太明显，需要输入更多的电压，大概6.8v输入才能稳定正常工作，20Ω则只需5.5v输入）</p>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>利用侧信道攻击成功解了一道硬件CTF题</li>
+<li>通过自己构建电路，才知道实施一次侧信道攻击不是一件容易的事</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB/" rel="tag"># 侧信道攻击</a>
+              <a href="/tags/DPA/" rel="tag"># DPA</a>
+              <a href="/tags/CPA/" rel="tag"># CPA</a>
+              <a href="/tags/CTF/" rel="tag"># CTF</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2022/09/%E4%BD%BF%E7%94%A8Atmega328P%E6%90%AD%E5%BB%BAArduino%E6%9C%80%E5%B0%8F%E7%B3%BB%E7%BB%9F/" rel="prev" title="使用Atmega328P搭建Arduino最小系统">
+      <i class="fa fa-chevron-left"></i> 使用Atmega328P搭建Arduino最小系统
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3ChipWhisperer-Unable-to-import-LASCAR%E9%94%99%E8%AF%AF/" rel="next" title="解决ChipWhisperer-Unable to import LASCAR错误">
+      解决ChipWhisperer-Unable to import LASCAR错误 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">3.</span> <span class="nav-text">其他</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '670566997ee4692aa80334b064006ff9',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

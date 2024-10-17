@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 本篇将基于chipwhisperer-jupyter sca101的Lab 2_1B来学习如何通过能量分析得出简单密码验证系统的正确密码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="侧信道攻击学习笔记2-密码验证的能量分析">
+<meta property="og:url" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 本篇将基于chipwhisperer-jupyter sca101的Lab 2_1B来学习如何通过能量分析得出简单密码验证系统的正确密码">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814093545869.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814093852193.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094220508.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094442129.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094607213.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094715395.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094852208.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814095717311.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814095940428.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814100239285.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814100703015.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814102041713.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814102326595.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814103137749.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814103428749.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814105345076.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814110009573.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111242308.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111431278.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111650382.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111746779.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111914894.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112046626.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112307120.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112437023.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112717402.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112913830.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814113850610.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814114004783.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814114031310.png">
+<meta property="article:published_time" content="2022-08-14T01:30:09.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:19.299Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="侧信道攻击">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814093545869.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>侧信道攻击学习笔记2-密码验证的能量分析 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          侧信道攻击学习笔记2-密码验证的能量分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-14 09:30:09" itemprop="dateCreated datePublished" datetime="2022-08-14T09:30:09+08:00">2022-08-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:19" itemprop="dateModified" datetime="2024-10-16T13:19:19+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>本篇将基于<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-jupyter">chipwhisperer-jupyter</a> sca101的Lab 2_1B来学习如何通过能量分析得出简单密码验证系统的正确密码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814093545869.png" alt="image-20220814093545869"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>可以看到同样有MAIN、HARDWARE和SIMULATED，跟之前一样，这里选择把HARDWARE的代码复制到MAIN执行</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814093852193.png" alt="image-20220814093852193"></p>
+</li>
+<li><p>开始同样是选择合适的平台，这里因为目标板是XMEGA，所以只需改PLATFORM为&#39;CWLITEXMEGA&#39;即可</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094220508.png" alt="image-20220814094220508"></p>
+</li>
+<li><p>前几行代码其实作用就是初始化一些参数和编译合适的目标板固件并上传至目标板</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094442129.png" alt="image-20220814094442129"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094607213.png" alt="image-20220814094607213"></p>
+</li>
+<li><p>接着运行，可以看到&#39;OK to continue!&#39;，说明前面的配置没有问题，可以继续往下运行</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094715395.png" alt="image-20220814094715395"></p>
+</li>
+<li><p>接着看到如下提示信息，大意是：“所以我们能做些什么呢？首先我要作弊并且告诉你我们拥有一个以&#39;h&#39;开头的预设密码，并且密码长度是5位，但是这是唯一的提示-你能用这些信息来干什么？”，然后便是让我们画一个发送&#39;h&#39;作为输入密码和另外一个值的能量消耗图</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814094852208.png" alt="image-20220814094852208"></p>
+</li>
+<li><p>根据提示，补全代码，运行即可看到，输入&#39;h&#39;和&#39;r&#39;作为密码时，微控制器的能量消耗波形</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Example - capture &#x27;h&#x27; - end with newline &#x27;\n&#x27; as serial protocol expects that</span></span><br><span class="line">trace_h = cap_pass_trace(<span class="string">&quot;h\n&quot;</span>)</span><br><span class="line">trace_r = cap_pass_trace(<span class="string">&quot;r\n&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(trace_h)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ###################</span></span><br><span class="line"><span class="comment"># Add your code here</span></span><br><span class="line"><span class="comment"># ###################</span></span><br><span class="line">%matplotlib notebook</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">plt.plot(trace_h)</span><br><span class="line">plt.plot(trace_r)</span><br><span class="line"></span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814095717311.png" alt="image-20220814095717311"></p>
+</li>
+<li><p>往下有以下提示信息，意思就是说：应该看到与下图1类似的结果，并且如果是使用了<code>%matplotlib notebook</code>魔法值，那么可以放大缩小查看图片</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814095940428.png" alt="image-20220814095940428"></p>
+</li>
+<li><p>这里要放大缩小图片，需要点击左下角保存图标左边的一个控件，点击后，右下角出现&#39;zoom rect&#39;字样即可开始放大图片，如果还需要移动，则点击移动的图标即可。</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814100239285.png" alt="image-20220814100239285"></p>
+</li>
+<li><p>接着往下运行，可以看到以下提示信息，大意是：接下来画所有可能的密码对应的能量消耗图，这个密码的实现只在&#39;abcdefghijklmnopqrstuvwxyz0123456789&#39;之中。提示信息还提到上面的波形图太长了，不好看，可以将scope.adc.samples设为500</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814100703015.png" alt="image-20220814100703015"></p>
+</li>
+<li><p>按照提示信息修改完代码后，运行效果如下</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">%matplotlib notebook</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">scope.adc.samples = <span class="number">500</span></span><br><span class="line"></span><br><span class="line">plt.figure()</span><br><span class="line"></span><br><span class="line">LIST_OF_VALID_CHARACTERS=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz0123456789&#x27;</span></span><br><span class="line"><span class="keyword">for</span> CHARACTER <span class="keyword">in</span> LIST_OF_VALID_CHARACTERS:</span><br><span class="line">    trace = cap_pass_trace(CHARACTER + <span class="string">&quot;\n&quot;</span>)</span><br><span class="line">    plt.plot(trace, label=CHARACTER)</span><br><span class="line">plt.legend()</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814102041713.png" alt="image-20220814102041713"></p>
+</li>
+<li><p>往下可以看到提示信息说，图片放大后应该可以看到有一条曲线不与其他曲线重叠在一起</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814102326595.png" alt="image-20220814102326595"></p>
+</li>
+<li><p>事实也是如此，如下图所示，有一条曲线明显与其他曲线偏离开，这条曲线其实就意味着输入了一位正确密码，根据其颜色与旁边的图例可知改峰图可能为&#39;h&#39;或者&#39;r&#39;（这里图中两者颜色一样不好区分），但结合已知第一位是&#39;h&#39;，所以可知实际代表的就是&#39;h&#39;</p>
+<p>  ![截屏2022-08-14 上午10.21.00](侧信道攻击学习笔记2-密码验证的能量分析&#x2F;截屏2022-08-14 上午10.21.00.png)</p>
+</li>
+<li><p>接着可以看到如下提示信息，让我们进行猜测第二位密码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814103137749.png" alt="image-20220814103137749"></p>
+</li>
+<li><p>按提示信息修改密码后，再次画图，如下图，可以看到有一条粉丝曲线明显与其他曲线不重叠，但由于图例中&#39;g&#39;、&#39;q&#39;、&#39;0&#39;都是粉色，所以不能直接判断是哪个，这是matplotlib的缺陷</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 将循环的trace = cap_pass_trace(CHARACTER + &quot;\n&quot;)改为以下代码即可猜测第二位</span></span><br><span class="line">trace = cap_pass_trace(<span class="string">&#x27;h&#x27;</span>+CHARACTER + <span class="string">&quot;\n&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814103428749.png" alt="image-20220814103428749"></p>
+</li>
+<li><p>改为用plotly画图，plotly同样为python画图的库，而且对比matplotlib，plotly有个优点就是，当你鼠标悬浮在某个位置时，它会显示该点对应的曲线信息，这样一来就容易区分是哪个字符了。如下图，图中明显与其他曲线分离的是字符&#39;0&#39;所对应的曲线，因此，可以推断第二位密码为&#39;0&#39;</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> plotly.graph_objects <span class="keyword">as</span> go</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line">fig = go.Figure()</span><br><span class="line"></span><br><span class="line">LIST_OF_VALID_CHARACTERS=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz0123456789&#x27;</span></span><br><span class="line"><span class="keyword">for</span> CHARACTER <span class="keyword">in</span> LIST_OF_VALID_CHARACTERS:</span><br><span class="line">    trace = cap_pass_trace(<span class="string">&#x27;h&#x27;</span>+CHARACTER + <span class="string">&quot;\n&quot;</span>)</span><br><span class="line">    fig.add_trace(go.Scatter(x=np.array(<span class="built_in">range</span>(trace.shape[<span class="number">0</span>])), y=trace, mode=<span class="string">&#x27;lines&#x27;</span>, name=CHARACTER,text=CHARACTER))</span><br><span class="line">fig.show()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814105345076.png" alt="image-20220814105345076"></p>
+</li>
+</ul>
+<h2 id="自动化判断"><a href="#自动化判断" class="headerlink" title="自动化判断"></a>自动化判断</h2><ul>
+<li><p>再往下就可以看到如下信息，大意是：假定现在不知道任何密码，要自动化判断正确密码的一个简单方法是，用&#39;0x00&#39;即空密码和其他输入做比较</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814110009573.png" alt="image-20220814110009573"></p>
+</li>
+<li><p>按提示，运行后，如下图，图中的两条曲线基本上重叠在一起了，因为&#39;c&#39;同样不是正确密码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111242308.png" alt="image-20220814111242308"></p>
+</li>
+<li><p>接下来的提示信息，就是让我们画出每个可能密码减去以&#39;0x00&#39;作为基线后的曲线图</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111431278.png" alt="image-20220814111431278"></p>
+</li>
+<li><p>按提示修改代码后，画图结果如下</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">%matplotlib notebook</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">plt.figure()</span><br><span class="line"></span><br><span class="line">LIST_OF_VALID_CHARACTERS=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz0123456789&#x27;</span></span><br><span class="line">ref_trace = cap_pass_trace( <span class="string">&quot;\x00\n&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> CHARACTER <span class="keyword">in</span> LIST_OF_VALID_CHARACTERS:</span><br><span class="line">    trace = cap_pass_trace(CHARACTER + <span class="string">&quot;\n&quot;</span>)</span><br><span class="line">    plt.plot(trace - ref_trace, label=CHARACTER)</span><br><span class="line">plt.legend()</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111650382.png" alt="image-20220814111650382"></p>
+</li>
+<li><p>可以看到上图跟下面提示信息一致，有一条图曲线比较突出</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111746779.png" alt="image-20220814111746779"></p>
+</li>
+<li><p>接下来提示信息就是说：让我们利用numpy的sum和abs来计算差异</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814111914894.png" alt="image-20220814111914894"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112046626.png" alt="image-20220814112046626"></p>
+</li>
+<li><p>按提示修改代码，计算每种可能密码的能量消耗数据减去&#39;0x00&#39;为基准的数据，最后求和得出差异值。如下图所示，字符&#39;h&#39;拥有最大的差异值，也就是说正确密码拥有最大的差异值</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line">ref_trace = cap_pass_trace( <span class="string">&quot;\x00\n&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> CHARACTER <span class="keyword">in</span> LIST_OF_VALID_CHARACTERS:</span><br><span class="line">    trace = cap_pass_trace(CHARACTER + <span class="string">&quot;\n&quot;</span>)</span><br><span class="line">    diff = np.<span class="built_in">sum</span>(np.<span class="built_in">abs</span>(trace - ref_trace))</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;&#123;:1&#125; diff = &#123;:2&#125;&quot;</span>.<span class="built_in">format</span>(CHARACTER, diff))</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112307120.png" alt="image-20220814112307120"></p>
+</li>
+<li><p>接下来的提示信息，就是让我们修改代码，自动化判断出每一位正确密码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112437023.png" alt="image-20220814112437023"></p>
+</li>
+<li><p>如下图，按提示信息修改代码运行后，最终得出正确密码&#39;h0px3&#39;，如果结果是&#39;hhhhh&#39;或者其他则需要检查代码是否有问题</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line">LIST_OF_VALID_CHARACTERS=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz0123456789&#x27;</span></span><br><span class="line">guessed_pwd = <span class="string">&quot;&quot;</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line"></span><br><span class="line">    ref_trace = cap_pass_trace(guessed_pwd + <span class="string">&quot;\x00\n&quot;</span>)</span><br><span class="line">    m=<span class="number">0</span></span><br><span class="line">    c=<span class="string">&#x27;\x00&#x27;</span></span><br><span class="line">    <span class="keyword">for</span> CHARACTER <span class="keyword">in</span> LIST_OF_VALID_CHARACTERS:</span><br><span class="line">        trace = cap_pass_trace(guessed_pwd + CHARACTER + <span class="string">&#x27;\x00\n&#x27;</span>)</span><br><span class="line">        diff = np.<span class="built_in">sum</span>(np.<span class="built_in">abs</span>(trace - ref_trace))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> diff &gt; <span class="number">25</span>:</span><br><span class="line"></span><br><span class="line">            guessed_pwd += CHARACTER</span><br><span class="line">            <span class="built_in">print</span>(guessed_pwd)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112717402.png" alt="image-20220814112717402"></p>
+</li>
+<li><p>接下来看看目标板固件的源码实现，在hardware&#x2F;victims&#x2F;firmware&#x2F;basic-passwdcheck目录下的basic-passwdcheck.c文件中，我们可以看到，main函数中定义的代码的确就是&quot;h0px3&quot;。从下面源码，可以推测，正确密码与错误密码会有较大的差异主要在于，正确的密码需要执行更多的循环语句</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814112913830.png" alt="image-20220814112913830"></p>
+</li>
+<li><p>那么问题来了：把错误密码的<code>break</code>语句注释掉，还能用这个方法判断正确密码吗？</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814113850610.png" alt="image-20220814113850610"></p>
+</li>
+<li><p>按上图中修改basic-passwdcheck.c代码，重新编译并上传至目标板</p>
+</li>
+<li><p>再次运行画图和计算差异的代码，可以看到已经不能判断出，哪个是正确代码了</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814114004783.png" alt="image-20220814114004783"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02-%E5%AF%86%E7%A0%81%E9%AA%8C%E8%AF%81%E7%9A%84%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/image-20220814114031310.png" alt="image-20220814114031310"></p>
+</li>
+<li><p>所以如果要简单防止这种攻击，一个简单方法就是即使已经判断出密码错误，也让它跑完整个循环而不是跳出循环，虽然这会造成一定性能上的损失，但是这是个简单有效的方法</p>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>学习了如何利用能量分析来判断出简单密码验证系统中的正确密码</li>
+<li>学习了如何简单地防范这种能量分析攻击</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB/" rel="tag"># 侧信道攻击</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/" rel="prev" title="侧信道攻击学习笔记1">
+      <i class="fa fa-chevron-left"></i> 侧信道攻击学习笔记1
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B03-%E6%B1%89%E6%98%8E%E9%87%8D%E9%87%8F/" rel="next" title="侧信道攻击学习笔记3-汉明重量">
+      侧信道攻击学习笔记3-汉明重量 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E5%8C%96%E5%88%A4%E6%96%AD"><span class="nav-number">3.</span> <span class="nav-text">自动化判断</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '2a6829e718b899d0891e82e3d9801bf3',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

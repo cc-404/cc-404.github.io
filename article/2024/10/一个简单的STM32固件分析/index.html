@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前前言 这个是老早之前发在看雪上的帖子，原帖地址: https:&#x2F;&#x2F;bbs.kanxue.com&#x2F;thread-274788.htm，之所以搬回自己博客的原因是：这样可以免登录查看 以下开始为原贴内容">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个简单的STM32固件分析">
+<meta property="og:url" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="前前言 这个是老早之前发在看雪上的帖子，原帖地址: https:&#x2F;&#x2F;bbs.kanxue.com&#x2F;thread-274788.htm，之所以搬回自己博客的原因是：这样可以免登录查看 以下开始为原贴内容">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019212949107.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019214524365.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019214706672.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019214831722.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019215646779.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019215922602.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220040812.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220121203.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220226469.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220515688.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220734506.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220905530.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019221229600.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019221450090.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019221450090.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223224183.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223350235.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223537966.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223757828.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224422289.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224607801.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224814544.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224916234.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019225002719.png">
+<meta property="og:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019225959702.png">
+<meta property="article:published_time" content="2024-10-17T03:32:18.000Z">
+<meta property="article:modified_time" content="2024-10-17T04:12:39.426Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="逆向">
+<meta property="article:tag" content="STM32">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019212949107.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>一个简单的STM32固件分析 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一个简单的STM32固件分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-10-17 11:32:18 / 修改时间：12:12:39" itemprop="dateCreated datePublished" datetime="2024-10-17T11:32:18+08:00">2024-10-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/article/" itemprop="url" rel="index"><span itemprop="name">article</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="前前言"><a href="#前前言" class="headerlink" title="前前言"></a>前前言</h3><ul>
+<li>这个是老早之前发在看雪上的帖子，原帖地址: <a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-274788.htm">https://bbs.kanxue.com/thread-274788.htm</a>，之所以搬回自己博客的原因是：这样可以免登录查看</li>
+<li>以下开始为原贴内容</li>
+</ul>
+<span id="more"></span>
+
+<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><ul>
+<li><p>看完论坛的 <a target="_blank" rel="noopener" href="https://bbs.pediy.com/thread-272811.htm">STM32固件逆向</a> 帖子后，又在评论区发现这个求助贴 <a target="_blank" rel="noopener" href="https://bbs.pediy.com/thread-272872.htm">stm32芯片程序有xtea加密算法，但是数据排序的问题研究不明白</a> ，于是想着分析分析练练手</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019212949107.png" alt="image-20221019212949107"></p>
+</li>
+<li><p>根据求助贴内容，概括下有用的信息</p>
+<ul>
+<li><p>一个名为stm32f103RCT6.bin的固件，从固件名可以得知MCU型号为stm32f103RCT6</p>
+</li>
+<li><p>MCU与设备A通信时用到了XTEA加密</p>
+</li>
+<li><p>MCU注册时用到的密钥为 BA2F96A9</p>
+</li>
+<li><p>MCU与设备A通信时的两个加密样例如下</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">明文1</span><br><span class="line">10 BE 62 F8 E8 DC 34 46</span><br><span class="line">密文1</span><br><span class="line">8C 79 F5 D1 5E A9 46 2D</span><br><span class="line"></span><br><span class="line">明文2</span><br><span class="line">0E 77 50 C8 C6 27 E1 BF</span><br><span class="line">密文2</span><br><span class="line">36 0A 1A 6E 6E FE F0 84</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>接下来目标就是根据上面信息，找到加密函数，还原加密过程</p>
+</li>
+</ul>
+<h3 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h3><ul>
+<li><p>首先用IDA打开stm32f103RCT6.bin文件，选择ARM小端序，然OK进入即可</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019214524365.png" alt="image-20221019214524365"></p>
+</li>
+<li><p>直接以Binary file打开，可以看到，IDA没有识别出任何函数</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019214706672.png" alt="image-20221019214706672"></p>
+</li>
+<li><p>习惯性的把前几个字节&quot;D&quot;三下，如下图，可以大胆的猜测加载基地址为0x8000000，事实上也确实如此，当然可以根据MCU型号stm32f103RCT6去查datasheet。不过更多确定基地址的方法请参考论坛的这个帖子 <a target="_blank" rel="noopener" href="https://bbs.pediy.com/thread-267719.htm">固件安全之加载地址分析</a> ，里面详细介绍了多种方法来确定基地址，这里就不再赘述了</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019214831722.png" alt="image-20221019214831722"></p>
+</li>
+<li><p>Edit &gt; Segments &gt; Rebase program... 重设基地址为0x8000000，设置好基地址后，就已经往成功路上迈向一大步了</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019215646779.png" alt="image-20221019215646779"></p>
+</li>
+<li><p>接下来，Alt + L从前面几个地址之后开始选择，一直到末尾，右键选择&quot;Analyze selected area&quot;</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019215922602.png" alt="image-20221019215922602"></p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220040812.png" alt="image-20221019220040812"></p>
+</li>
+<li><p>出现下面提示框，选择Analyze，然后静待IDA分析过程结束</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220121203.png" alt="image-20221019220121203"></p>
+</li>
+<li><p>这时候，可以看到，IDA已经识别出许多函数了</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220226469.png" alt="image-20221019220226469"></p>
+</li>
+<li><p>接下来使用Findcrypt插件搜索加密常量，看看有没有什么发现，Search &gt; Find crypto constants，如下图，可以看到，有个TEA的delta加密常量，这正好对应前面提到的MCU通信时使用了XTEA加密</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220515688.png" alt="image-20221019220515688"></p>
+</li>
+<li><p>跟踪查看引用该常量的sub_800E288函数，F5结果如下图所示</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220734506.png" alt="image-20221019220734506"></p>
+</li>
+<li><p>对比网上的XTEA加密C代码，可以知道，sub_800E288函数的参数从左到右为，加密密钥、加密输入、加密输出</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019220905530.png" alt="image-20221019220905530"></p>
+</li>
+<li><p>对照上面XTEA加密C代码，就可以对一些变量重命名了，如下图所示，可以看到，加密时的密钥输入并不直接作为XTEA加密的密钥，而是经过了一些运算进行了变换</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019221229600.png" alt="image-20221019221229600"></p>
+</li>
+<li><p>接下来详细分析加密过程，首先时最前面的这部分，存在大量的 左移24、左移16和左移8，熟悉的朋友可能很快就反应过来，这个是大小端转换。所谓大小端指的是&quot;大端序&quot;（BigEndian）和&quot;小端序&quot;（LittleEndian）。用一句话来说&quot;大端序&quot;就是高位在前，低位在后，&quot;小端序&quot;就是低位在前，高位在后。举个简单例子对于同一个4字节的byte数组&quot;12 34 56 78&quot;，在大端序里面把它当成4字节的int的话它就是0x12345678，而在小端序里面把它当成4字节的int的话它就是0x78563412了。下面的&quot;&lt;&lt;24 &lt;&lt;16 &lt;&lt;8&quot;作用就是用来将4个byte的数组转为大端序的整数（MCU是小端序的，直接用*(int *)类型强转的话得到的结果就是一个小端序的int）</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019221450090.png" alt="image-20221019221450090"></p>
+</li>
+<li><p>忽略左移24、左移16和左移8这些端序转换的部分，我们能发现，其实对于输入in在正式XTEA加密前没有做任何特殊处理，而对于密钥的每一个字节则与一些常量进行了异或处理。同样地，看到&quot;0x66、0x6F ...&quot;，这些值熟悉的情况下，很容易反应过来，这些可能是ASCII码</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019221450090.png" alt="image-20221019221450090"></p>
+</li>
+<li><p>TAB键切换查看反汇编代码，如下图，可以看到这些常量都是基于地址0x8030A30开始的偏移量</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223224183.png" alt="image-20221019223224183"></p>
+</li>
+<li><p>查看0x8030A30地址，&quot;A&quot;一下，可以得到一个字符串，如下图所示，看得出来这是个有故事的字符串</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223350235.png" alt="image-20221019223350235"></p>
+</li>
+<li><p>回到反编译代码窗口，重新F5一下，可以看到，反编译代码更清晰明了了，密钥在用于XTEA加密之前，每个字节会与上面的字符串相对应的字节进行异或处理</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223537966.png" alt="image-20221019223537966"></p>
+</li>
+<li><p>再来看后面这部分，如下图，后面的其实就是标准XTEA加密，只不过对于加密结果的输出，同样有大小端的转换，&quot;HIBYTE(x) BYTE2(x) BYTE1(x)&quot;与上面的&quot;&lt;&lt;24 &lt;&lt;16 &lt;&lt;8&quot;一样，常见于数据大小端转换</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019223757828.png" alt="image-20221019223757828"></p>
+</li>
+<li><p>到这里就结束了吗？- 答案是还没有，求助贴里面提到的MCU注册密钥是&quot;BA2F96A9&quot;，只有4个字节大小的密钥，但是这个加密函数的密钥输入却有16个字节，所以从MCU注册密钥&quot;BA2F96A9&quot;到加密密钥userKey中间还有一些过程需要去分析</p>
+</li>
+<li><p>对 sub_800E288 &quot;X&quot;一下，查看sub_800E288函数的交叉引用，如下图，可以看到只有一处调用</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224422289.png" alt="image-20221019224422289"></p>
+</li>
+<li><p>查看该调用，如下图，可以看到第一个参数加密密钥是以地址0x20000104传入的，所以加密密钥就储存在0x20000104地址处，接下来只要查看哪些函数有往0x20000104地址写数据，即可找到密钥变换的函数</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224607801.png" alt="image-20221019224607801"></p>
+</li>
+<li><p>接下来Text Serach搜索0x20000104，看哪些函数使用了0x20000104地址</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224814544.png" alt="image-20221019224814544"></p>
+</li>
+<li><p>如下图，搜索的结果并不多，挨个查看后，可以看到只有sub_800F3C8函数中有往0x20000104地址写数据的代码，而且sub_800F3C8函数参数为unsigned int类型（刚好是4个字节大小），所以基本上可以确定这个函数就是MCU注册时的密钥变换为加密密钥的函数</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019224916234.png" alt="image-20221019224916234"></p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019225002719.png" alt="image-20221019225002719"></p>
+</li>
+<li><p>接下来将sub_800F3C8和sub_800E288这两个函数反编译伪代码提取出来，用VS Code简单写个程序验证下，代码如下</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;defs.h&quot;</span></span></span><br><span class="line"><span class="type">void</span> <span class="title function_">keyExpand</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span> key, _BYTE *outKey)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">XTEA</span><span class="params">(_BYTE *userkey, _BYTE *in, _BYTE *out)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">keyExpand</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span> key, _BYTE *outKey)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">int</span> i; <span class="comment">// r0</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">16</span>; i = (i + <span class="number">1</span>) )</span><br><span class="line">    *(i + outKey) = key &gt;&gt; (<span class="number">8</span> * (<span class="number">3</span> - i % <span class="number">4</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">XTEA</span><span class="params">(_BYTE *userkey, _BYTE *in, _BYTE *out)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> v3; <span class="comment">// r3</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> v4; <span class="comment">// r4</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> v5; <span class="comment">// r5</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> i; <span class="comment">// r6</span></span><br><span class="line">  <span class="type">int</span> v7[<span class="number">4</span>]; <span class="comment">// [sp+0h] [bp-34h]</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> v8; <span class="comment">// [sp+10h] [bp-24h]</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> v9; <span class="comment">// [sp+14h] [bp-20h]</span></span><br><span class="line"></span><br><span class="line">  <span class="type">char</span> aStefanlovesmay[] = <span class="string">&quot;StefanLovesMaya!&quot;</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( userkey !=<span class="number">0</span>  &amp;&amp; in!=<span class="number">0</span> &amp;&amp; out!=<span class="number">0</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    v8 = (*in &lt;&lt; <span class="number">24</span>) + (in[<span class="number">1</span>] &lt;&lt; <span class="number">16</span>) + (in[<span class="number">2</span>] &lt;&lt; <span class="number">8</span>) + in[<span class="number">3</span>];</span><br><span class="line">    v9 = (in[<span class="number">4</span>] &lt;&lt; <span class="number">24</span>) + (in[<span class="number">5</span>] &lt;&lt; <span class="number">16</span>) + (in[<span class="number">6</span>] &lt;&lt; <span class="number">8</span>) + in[<span class="number">7</span>];</span><br><span class="line">    v7[<span class="number">0</span>] = (userkey[<span class="number">3</span>] ^ aStefanlovesmay[<span class="number">3</span>])</span><br><span class="line">          + ((*userkey ^ aStefanlovesmay[<span class="number">0</span>]) &lt;&lt; <span class="number">24</span>)</span><br><span class="line">          + ((userkey[<span class="number">1</span>] ^ aStefanlovesmay[<span class="number">1</span>]) &lt;&lt; <span class="number">16</span>)</span><br><span class="line">          + ((userkey[<span class="number">2</span>] ^ aStefanlovesmay[<span class="number">2</span>]) &lt;&lt; <span class="number">8</span>);</span><br><span class="line">    v7[<span class="number">1</span>] = (userkey[<span class="number">7</span>] ^ aStefanlovesmay[<span class="number">7</span>])</span><br><span class="line">          + ((userkey[<span class="number">4</span>] ^ aStefanlovesmay[<span class="number">4</span>]) &lt;&lt; <span class="number">24</span>)</span><br><span class="line">          + ((userkey[<span class="number">5</span>] ^ aStefanlovesmay[<span class="number">5</span>]) &lt;&lt; <span class="number">16</span>)</span><br><span class="line">          + ((userkey[<span class="number">6</span>] ^ aStefanlovesmay[<span class="number">6</span>]) &lt;&lt; <span class="number">8</span>);</span><br><span class="line">    v7[<span class="number">2</span>] = (userkey[<span class="number">11</span>] ^ aStefanlovesmay[<span class="number">11</span>])</span><br><span class="line">          + ((userkey[<span class="number">8</span>] ^ aStefanlovesmay[<span class="number">8</span>]) &lt;&lt; <span class="number">24</span>)</span><br><span class="line">          + ((userkey[<span class="number">9</span>] ^ aStefanlovesmay[<span class="number">9</span>]) &lt;&lt; <span class="number">16</span>)</span><br><span class="line">          + ((userkey[<span class="number">10</span>] ^ aStefanlovesmay[<span class="number">10</span>]) &lt;&lt; <span class="number">8</span>);</span><br><span class="line">    v7[<span class="number">3</span>] = (userkey[<span class="number">15</span>] ^ aStefanlovesmay[<span class="number">15</span>])</span><br><span class="line">          + ((userkey[<span class="number">12</span>] ^ aStefanlovesmay[<span class="number">12</span>]) &lt;&lt; <span class="number">24</span>)</span><br><span class="line">          + ((userkey[<span class="number">13</span>] ^ aStefanlovesmay[<span class="number">13</span>]) &lt;&lt; <span class="number">16</span>)</span><br><span class="line">          + ((userkey[<span class="number">14</span>] ^ aStefanlovesmay[<span class="number">14</span>]) &lt;&lt; <span class="number">8</span>);</span><br><span class="line">    v3 = v8;</span><br><span class="line">    v4 = v9;</span><br><span class="line">    v5 = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">0x20</span>; ++i )</span><br><span class="line">    &#123;</span><br><span class="line">      v3 += (((<span class="number">16</span> * v4) ^ (v4 &gt;&gt; <span class="number">5</span>)) + v4) ^ (v7[v5 &amp; <span class="number">3</span>] + v5);</span><br><span class="line">      v5 -= <span class="number">-0x9E3779B9</span>;</span><br><span class="line">      v4 += (((<span class="number">16</span> * v3) ^ (v3 &gt;&gt; <span class="number">5</span>)) + v3) ^ (v7[(v5 &gt;&gt; <span class="number">11</span>) &amp; <span class="number">3</span>] + v5);</span><br><span class="line">    &#125;</span><br><span class="line">    *out = HIBYTE(v3);</span><br><span class="line">    out[<span class="number">1</span>] = BYTE2(v3);</span><br><span class="line">    out[<span class="number">2</span>] = BYTE1(v3);</span><br><span class="line">    out[<span class="number">3</span>] = v3;</span><br><span class="line">    out[<span class="number">4</span>] = HIBYTE(v4);</span><br><span class="line">    out[<span class="number">5</span>] = BYTE2(v4);</span><br><span class="line">    out[<span class="number">6</span>] = BYTE1(v4);</span><br><span class="line">    out[<span class="number">7</span>] = v4;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> key=<span class="number">0xBA2F96A9</span>;</span><br><span class="line">    _BYTE outKey[<span class="number">16</span>];</span><br><span class="line">    </span><br><span class="line">    keyExpand(key, outKey);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;outKey: &quot;</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">16</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%02x &quot;</span>, outKey[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    <span class="comment">// _BYTE in[] = &#123;0x10, 0xBE, 0x62, 0xF8, 0xE8, 0xDC, 0x34, 0x46&#125;;</span></span><br><span class="line">    _BYTE in[] =&#123;<span class="number">0x0E</span>, <span class="number">0x77</span>, <span class="number">0x50</span>, <span class="number">0xC8</span>, <span class="number">0xC6</span>, <span class="number">0x27</span>, <span class="number">0xE1</span>, <span class="number">0xBF</span>&#125;;</span><br><span class="line">    _BYTE out[<span class="number">8</span>];</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;in: &quot;</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">8</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%02x &quot;</span>, in[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    XTEA(outKey, in, out);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;out: &quot;</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">8</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%02x &quot;</span>, out[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>输出结果，如下图所示，下面输出结果用到例子为上面样例的第2组数据（使用第1组效果也一样），可以看到加密结果与预期一致，至此，成功还原了整个XTEA加密过程</p>
+<p>  <img src="/article/2024/10/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84STM32%E5%9B%BA%E4%BB%B6%E5%88%86%E6%9E%90/image-20221019225959702.png" alt="image-20221019225959702"></p>
+</li>
+</ul>
+<h3 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h3><ul>
+<li>如您觉得本文内容侵犯了您的利益，请联系作者或者管理删除！</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+              <a href="/tags/STM32/" rel="tag"># STM32</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/" rel="prev" title="CW308T-AVR使用笔记">
+      <i class="fa fa-chevron-left"></i> CW308T-AVR使用笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/article/2024/10/Qiling%E6%A1%86%E6%9E%B6%E6%A8%A1%E6%8B%9F%E8%BF%90%E8%A1%8C%E5%9B%BA%E4%BB%B6%E9%85%8D%E5%90%88IDA%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95/" rel="next" title="Qiling框架模拟运行固件配合IDA动态调试">
+      Qiling框架模拟运行固件配合IDA动态调试 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">3.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E"><span class="nav-number">4.</span> <span class="nav-text">最后</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : 'e92de2fa608f29b2c6b189bb762fc47c',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

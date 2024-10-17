@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 最近实际逆向过程中，经常会遇到AES算法，而且有时也会遇到一些非标准AES或者魔改的AES  本着进一步了解AES算法的态度，决定结合网上各种资料，自己动手实现一次AES加解密，加深自己对AES的了解  当然网上有很多优秀的AES实现了，其中最著名的当属：openssl，openssl包含非常多的密码学算法的实现，而且很多都是性能优化后的实现。一个比较小巧的c语言实现是：https:&#x2F;&#x2F;gi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python实现AES加解密">
+<meta property="og:url" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 最近实际逆向过程中，经常会遇到AES算法，而且有时也会遇到一些非标准AES或者魔改的AES  本着进一步了解AES算法的态度，决定结合网上各种资料，自己动手实现一次AES加解密，加深自己对AES的了解  当然网上有很多优秀的AES实现了，其中最著名的当属：openssl，openssl包含非常多的密码学算法的实现，而且很多都是性能优化后的实现。一个比较小巧的c语言实现是：https:&#x2F;&#x2F;gi">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152134364.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152200906.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152503403.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917154217910.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917155050764.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917155512887.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917155804412.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917160008208.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917160335145.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152134364.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917190656328.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917190808814.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917191346001.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917191553869.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917191830108.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192242734.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192445315.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192603229.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192723809.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917193444822.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917195219892.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917210513080.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917210840858.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917212201020.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917232817574.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917232910940.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917233759724.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234022205.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917233901866.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234537749.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234654838.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234947434.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234916382.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917235133997.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917235225560.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917235258295.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918110420942.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918110440201.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918110457960.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918111212449.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918111630976.png">
+<meta property="article:published_time" content="2022-09-17T06:49:52.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:11.116Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="AES">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152134364.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Python实现AES加解密 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python实现AES加解密
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-17 14:49:52" itemprop="dateCreated datePublished" datetime="2022-09-17T14:49:52+08:00">2022-09-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:11" itemprop="dateModified" datetime="2024-10-16T13:19:11+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>最近实际逆向过程中，经常会遇到AES算法，而且有时也会遇到一些非标准AES或者魔改的AES</p>
+</li>
+<li><p>本着进一步了解AES算法的态度，决定结合网上各种资料，自己动手实现一次AES加解密，加深自己对AES的了解</p>
+</li>
+<li><p>当然网上有很多优秀的AES实现了，其中最著名的当属：<a target="_blank" rel="noopener" href="https://github.com/openssl/openssl">openssl</a>，openssl包含非常多的密码学算法的实现，而且很多都是性能优化后的实现。一个比较小巧的c语言实现是：<a target="_blank" rel="noopener" href="https://github.com/kokke/tiny-AES-c">https://github.com/kokke/tiny-AES-c</a></p>
+</li>
+<li><p>python的一些AES实现:</p>
+<ul>
+<li><p><a target="_blank" rel="noopener" href="https://gist.github.com/raullenchai/2920069">https://gist.github.com/raullenchai/2920069</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/hlilje/aes-python.git">https://github.com/hlilje/aes-python.git</a></p>
+</li>
+</ul>
+</li>
+<li><p>这里再介绍一下python的：<a target="_blank" rel="noopener" href="https://github.com/Legrandin/pycryptodome.git">pycryptodome</a>库，这个虽然是python库，但底层算法是c写的，所以性能上是非常不错的，可以安装这个库替换python的Crypto库，也可以与Crypto共存。这个库可以作为python中各种加密算法的标准库来使用。</p>
+</li>
+<li><p>因为这里是以学习为目的，所以本文不考虑任何性能上的问题</p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>AES算法总体上可以分为两部分去实现，一部分是：密钥扩展，另一部分是：加解密逻辑</p>
+</li>
+<li><p>下面首先来实现密钥扩展，这个连接有AES密钥扩展的详细介绍<a target="_blank" rel="noopener" href="https://www.brainkart.com/article/AES-Key-Expansion_8410/">https://www.brainkart.com/article/AES-Key-Expansion_8410&#x2F;</a></p>
+</li>
+<li><p>下面盗用上面提到链接中的两张图，第一张图是AES密钥扩展的实现伪代码实现，第二张图为AES密钥扩展的流程图</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152134364.png" alt="image-20220917152134364"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152200906.png" alt="image-20220917152200906"></p>
+</li>
+<li><p>下面来解析这两张图，首先看图中的这一部分，这张图什么意思呢？这张图表示，将密钥划分为4x4的矩阵，需要注意的点是这个密钥是以列为主顺序(<strong>Column-major order</strong>)的矩阵，而不是以行为主顺序(<strong>Row-major order</strong>)的矩阵，这两种矩阵相互转化的实际上就是矩阵转置。密钥的每一列记为w0，w1， w2， w3（w代表word，32位即4字节整数，w0 ... w3视为一个word类型数组）</p>
+<ul>
+<li>题外话：像c语言中的二维数组就是以行为主顺序的，不注意这个的话，可能最后实现的&quot;AES&quot;是非标准的AES。实际逆向工作中就有遇到过，密钥和数据输入输出都没转置的情况，如果遇到这种&quot;AES&quot;，如何使用标准AES去实现呢？很简单，只需将密钥、输入、输出都进行矩阵转置即可</li>
+</ul>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152503403.png" alt="image-20220917152503403"></p>
+</li>
+<li><p>接着来看这部分，这张图又代表什么含义呢？先不看w4，只看w5，w6，w7，可以看到w5 &#x3D; w1 xor w4，w6 &#x3D; w2 xor w5， w7 &#x3D; w3 xor w6 即（wi &#x3D; wi-4 xor wi-1）。再来看w4部分，下图w3指出的g代表使用g函数处理w3，所以w4 &#x3D; w0 xor g(w3)。就这样依次类推，以后的w8，w9 ... wi都是这么生成的（其中如果i为4的倍数，则wi-1需要先经过g函数处理后再与wi-4进行异或）</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917154217910.png" alt="image-20220917154217910"></p>
+</li>
+<li><p>接着看下面这部分，下图即为上面提到的g函数，这个g函数可以拆分成3部分来看</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917155050764.png" alt="image-20220917155050764"></p>
+</li>
+<li><p>首先是下图这个，下图这个代表将word类型循环左移1位如：第0个字节移到最后一位，其余3字节往左移动1位</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917155512887.png" alt="image-20220917155512887"></p>
+</li>
+<li><p>接着来看这个，下图B1，B2，B3，B0经过S后得到B1&#39;，B2&#39;，B3&#39;，B0&#39;，S代表S-Box，也就是说这一步操作是将word的每个字节分别经过S-Box替换得到新的word</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917155804412.png" alt="image-20220917155804412"></p>
+</li>
+<li><p>最后是这个B1&#39;，B2&#39;，B3&#39;，B0&#39;与RCj，0，0，0异或得到g函数最终输出w&#39;，这个RCj代表什么呢？这个代表着AES的密钥扩展的轮常量Rcon（这些值好像与有限域GF(2^8）上的乘法有关），这个AES轮常量也是word类型数据，而且每个Rcon的右边3个字节总为0，只有第一个字节会随着循环发生改变。Rcon的值为&quot;01 02 04 08 10 20 40 80 1B 36&quot;（有些AES实现中Rcon常量很多，但实际上AES密钥扩展用到的就只有这些）</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917160008208.png" alt="image-20220917160008208"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917160335145.png" alt="image-20220917160335145"></p>
+</li>
+<li><p>回过头来再看密钥扩展函数的为代码就很容易理解了，第一个循环作用实际上就是按列取密钥数据得到wi，第二个循环就是密钥扩展的主逻辑了，RotWord代表将word的4个字节循环左移1位，SubWord代表将word的每个字节进行S-Box替换，Rcon代表着轮常量数组</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917152134364.png" alt="image-20220917152134364"></p>
+</li>
+<li><p>接下来使用python实现AES密钥扩展了，首先定义sbox和i_sbox。sbox和i_sbox相当于互为逆运算，一个字节使用sbox进行字节替换后再用i_sbox进行字节替换得到的还是它本身，反过来也一样。密钥扩展算法里面只用到sbox，加密算法也用到了sbox，解密则用的为i_sbox</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917190656328.png" alt="image-20220917190656328"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917190808814.png" alt="image-20220917190808814"></p>
+</li>
+<li><p>接着定义轮常量Rcon，注意第0个0x8d实际上并没有用到，这里加上这个主要是后面取值方便，参考：<a target="_blank" rel="noopener" href="https://github.com/kokke/tiny-AES-c">https://github.com/kokke/tiny-AES-c</a>的密钥扩展实现，对于AES 128用到了10个Rcon值，192只用到了其中的8个，256则只用到了7个，Rcon[0]在AES中没有被使用</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917191346001.png" alt="image-20220917191346001"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917191553869.png" alt="image-20220917191553869"></p>
+</li>
+<li><p>接下来编写sub_word函数，这里为了方便将word直接视为4字节的数组，而不是视为一个32位的整数，代码很简单，就是将word的每个字节通过sbox查表方式替换得到新的字节，最后返回替换后的结果</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917191830108.png" alt="image-20220917191830108"></p>
+</li>
+<li><p>类似地可以按以下方式实现rot_word，循环左移1个字节，可以通过取余数的方式来实现</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192242734.png" alt="image-20220917192242734"></p>
+</li>
+<li><p>最后是异或函数xor，将a，b中的每个字节异或得到输出</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192445315.png" alt="image-20220917192445315"></p>
+</li>
+<li><p>定义了上面的运算函数后，就可以编写密钥扩展函数了，总体函数如下</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192603229.png" alt="image-20220917192603229"></p>
+</li>
+<li><p>首先解释下前面部分的作用，因为AES有128、192、256位数之分，所以先根据输入参数判断选用的是哪种，如果为128则定义密钥长度为klen&#x3D;16字节，nk&#x3D;4（nk代表原始密钥有多少个4字节的word，nk与轮常量Rcon取值有关），扩展后的密钥长度为176（16+10*16）。因为标准AES的密钥扩展后的密钥前klen字节为原AES密钥，所以轮密钥前klen字节只需复制原来的密钥即可</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917192723809.png" alt="image-20220917192723809"></p>
+</li>
+<li><p>接下来看下面部分，&quot;&#x2F;&#x2F;&quot;代表只保留整数的除法（python中单&quot;&#x2F;&quot;除法，如果有小数会保留小数），temp按照前面的先取wi-1，如果i为nk的倍数，那么就进行先rot_word，再sub_word，最后再与轮常量rcon_t异或，从前面可知rcon_t数组后3个元素固定为0，第0个元素通过i&#x2F;&#x2F;nk来确定。最后wi-nk与wi-1异或（因为要扩展到192和256，所以不是wi-4而是wi-nk）</p>
+<ul>
+<li>这里需要注意的是如果是AES 256，那么当i%nk &#x3D;&#x3D; 4时，temp还要再进行一次sub_word运算，这个也是从tiny-AES-c中的实现得知，实际上最前面的密钥扩展描述的是AES 128的密钥扩展，所以这里需要补充一下AES 256密钥扩展</li>
+</ul>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917193444822.png" alt="image-20220917193444822"></p>
+</li>
+<li><p>接下来测试AES 128密钥扩展，以16个00字节为例，密钥扩展后结果如下，这个00得到的密钥扩展结果还是挺有意义的，有时判断一个算法是否为标准AES实现，可以首先通过对比同样为16个00字节密钥时，密钥扩展输出是否与标准AES一致。在实现AES时，也可以通过这种方式，来对比标准AES的结果，看自己实现的是否正确。</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917195219892.png" alt="image-20220917195219892"></p>
+</li>
+<li><p>接着来看AES加密部分，同样先来看张图，图来自<a target="_blank" rel="noopener" href="https://www.brainkart.com/article/The-AES-Encryption-Algorithm_9558/">https://www.brainkart.com/article/The-AES-Encryption-Algorithm_9558&#x2F;</a></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917210513080.png" alt="image-20220917210513080"></p>
+</li>
+<li><p>AES加密每轮循环可以分为SubBytes、ShiftRows、MixColumns、AddRoundKey四个部分（除最后一轮外，最后一轮没有MixColumns）</p>
+</li>
+<li><p>先来看前两个SubBytes和ShiftRows，这两个顺序其实可以对调（结果一样），SubBytes就是将输入的16个字节每个字节经过sbox替换得到新的16字节</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917210840858.png" alt="image-20220917210840858"></p>
+</li>
+<li><p>ShifRows有个形象的图，如下图所示，ShifRows就是第0行不变，第1行循环左移1字节，第2行循环左移2字节，第3行循环左移3字节，参考：<a target="_blank" rel="noopener" href="http://www.moserware.com/2009/09/stick-figure-guide-to-advanced.html">http://www.moserware.com/2009/09/stick-figure-guide-to-advanced.html</a></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917212201020.png" alt="image-20220917212201020"></p>
+</li>
+<li><p>接着是MixColumns，列混淆有点复杂，右乘一个固定矩阵，其中的运算与有限域GF(2^8)的四则运算有关，参考：<a target="_blank" rel="noopener" href="https://www.brainkart.com/article/Advanced-Encryption-Standard(AES)-Transformation-Functions_8409/">https://www.brainkart.com/article/Advanced-Encryption-Standard(AES)-Transformation-Functions_8409&#x2F;</a></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917232817574.png" alt="image-20220917232817574"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917232910940.png" alt="image-20220917232910940"></p>
+</li>
+<li><p>最后是AddRoundKey，AddRoundKey比较容易理解，就是将当前状态state每个字节与下一轮密钥的每个字节异或</p>
+</li>
+<li><p>AES解密的话则是所有操作反过来，每轮循环先AddRoundKey（因为是异或，所以可以用同一个函数），再InvMixColumns，再InvShifRows，最后InvSubBytes，这三个都是与加密的3个变换是相反的</p>
+</li>
+<li><p>接着可以编写Python代码了，首先是最容易实现的SubBytes和InvSubBytes，只需将每个字节通过查表替换即可</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917233759724.png" alt="image-20220917233759724"></p>
+</li>
+<li><p>这里再定义一个矩阵转置函数transpose，之所以要这个函数，就是前面所提到的AES的矩阵是<strong>Column-major order</strong>，而C语言、Python这些编程语言的数组其实是<strong>Row-major order</strong>的，所以需要对密钥、输入输出都进行矩阵转置才能与标准AES一致，这个transpose函数用了个最简单粗暴的方法实现</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234022205.png" alt="image-20220917234022205"></p>
+</li>
+<li><p>接着是AddRoundKey，这里接收3个参数，分别为当前循环数cur_round，加解密状态state，轮密钥数组round_key，每次AddRoundKey只需将state与相对应的轮密钥异或即可</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917233901866.png" alt="image-20220917233901866"></p>
+</li>
+<li><p>接着是ShiftRows和InvShiftRows，这里同样选择最简单粗暴的方式来实现</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234537749.png" alt="image-20220917234537749"></p>
+</li>
+<li><p>接着是最个人认为AES最难以理解的就是MixColumns和InvMixColumns，这里有限域GF(2^8)乘法直接抄<a target="_blank" rel="noopener" href="https://gist.github.com/raullenchai/2920069">https://gist.github.com/raullenchai/2920069</a>的实现</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234654838.png" alt="image-20220917234654838"></p>
+</li>
+<li><p>MixColumns，按照下图的右乘固定矩阵方式，实现如下</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234947434.png" alt="image-20220917234947434"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917234916382.png" alt="image-20220917234916382"></p>
+</li>
+<li><p>InvMixColumns，按照下图的右乘另一个固定矩阵方式，实现如下</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917235133997.png" alt="image-20220917235133997"></p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917235225560.png" alt="image-20220917235225560"></p>
+</li>
+<li><p>从下图可以看出，所用到的两个固定矩阵是互为逆矩阵，所以可以用来加解密</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220917235258295.png" alt="image-20220917235258295"></p>
+</li>
+<li><p>有了上面这些就可以实现AES加密函数了，如下图所示</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918110420942.png" alt="image-20220918110420942"></p>
+</li>
+<li><p>首先来解释前面部分，首先判断key是否为字符串，如果是那么将之转化为bytes类型。然后是判断是否有bits参数，如果没有则根据密钥key长度自动判断bits的值，然后就是调用前面实现的密钥扩展函数key_expansion来生成轮密钥数组，并计算加密循环次数</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918110440201.png" alt="image-20220918110440201"></p>
+</li>
+<li><p>接着同样先判断输入是否为字符串，如果是那么先将之转化为bytes类型。然后是将输入进行矩阵每16个字节进行转置，输出也是进行转置，然后就是按每轮循环SubBytes、ShiftRows、MixColumns、AddRoundKey进行（最后一轮循环没有MixColumns）</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918110457960.png" alt="image-20220918110457960"></p>
+</li>
+<li><p>AES解密跟加密的过程刚好反过来，AddRoundKey的初始轮数是最后一轮，每轮循环的顺序是AddRoundKey、InvMixColumns、InvShiftRows、InvSubBytes</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918111212449.png" alt="image-20220918111212449"></p>
+</li>
+<li><p>测试加解密，并与pycryptodome库的结果相对比来判断是否正确实现</p>
+<p>  <img src="/note/2022/09/Python%E5%AE%9E%E7%8E%B0AES%E5%8A%A0%E8%A7%A3%E5%AF%86/image-20220918111630976.png" alt="image-20220918111630976"></p>
+</li>
+<li><p>至此，成功用Python实现了AES，本文完整代码：<a href="AES.ipynb">AES.ipynb</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AES/" rel="tag"># AES</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/tutorial/2022/09/%E8%A7%A3%E5%86%B3Switch-Tinfoil%E4%B8%8B%E8%BD%BD%E6%8F%90%E7%A4%BA-SSL%E6%97%B6%E9%97%B4%E4%B8%8D%E5%AF%B9%E9%97%AE%E9%A2%98/" rel="prev" title="解决Switch-Tinfoil下载提示-SSL时间不对问题">
+      <i class="fa fa-chevron-left"></i> 解决Switch-Tinfoil下载提示-SSL时间不对问题
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2023/04/CW308T-AVR%E4%BD%BF%E7%94%A8%E7%AC%94%E8%AE%B0/" rel="next" title="CW308T-AVR使用笔记">
+      CW308T-AVR使用笔记 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">开始</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : 'fd53e835897aa52e27ab18760c7c7c31',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 本篇将跟随chipwhisperer-jupyter sca101的教程来学习DPA(Differential Power Analysis，差分能量分析)  与上一篇不同，本篇将攻击真正的AES算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="侧信道攻击学习笔记5-差分能量分析攻击固件中的AES实现">
+<meta property="og:url" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 本篇将跟随chipwhisperer-jupyter sca101的教程来学习DPA(Differential Power Analysis，差分能量分析)  与上一篇不同，本篇将攻击真正的AES算法">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104901460.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820223116137.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820223434595.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820223931846.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820224044381.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821102023449.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821103417466.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821103614196.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104401058.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104723654.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104821718.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821105014483.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821111905404.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/2022-08-21.11.31.11.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821131907341.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821132918276.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821133033977.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821133137066.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821133523599.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821134846876.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821135230198.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821140652892.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821140828304.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141253823.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141405339.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141504265.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821142643906.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821143256050.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821145417898.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821145256193.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141405339.png">
+<meta property="article:published_time" content="2022-08-20T08:08:35.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:20.251Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="侧信道攻击">
+<meta property="article:tag" content="差分能量分析">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104901460.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>侧信道攻击学习笔记5-差分能量分析攻击固件中的AES实现 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          侧信道攻击学习笔记5-差分能量分析攻击固件中的AES实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-20 16:08:35" itemprop="dateCreated datePublished" datetime="2022-08-20T16:08:35+08:00">2022-08-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:20" itemprop="dateModified" datetime="2024-10-16T13:19:20+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>本篇将跟随<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-jupyter">chipwhisperer-jupyter</a> sca101的教程来学习DPA(Differential Power Analysis，差分能量分析)</p>
+</li>
+<li><p>与上一篇不同，本篇将攻击真正的AES算法</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104901460.png" alt="image-20220821104901460"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>这次选择的是Lab3_3，可以看到同样有MAIN、HARDWARE和SIMULATED三种ipynb，这里同样选择将硬件的内容复制到MAIN中执行</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820223116137.png" alt="image-20220820223116137"></p>
+</li>
+<li><p>首先可以看到选择版本号的提示如下图所示，这里提到对于&#39;CWLITEXMEGA&#39;的加密模块可以选择&#39;AVRCRYPTOLIB&#39;，但这里不选择&#39;AVRCRYPTOLIB&#39;，因为测试选用这个，效果太好了，可以相对比较轻松的恢复整个AES密钥，基于学习目的，所以这里保持默认，选择&#39;TINYAES128C&#39;</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820223434595.png" alt="image-20220820223434595"></p>
+</li>
+<li><p>前几行代码，跟之前的作用一样，初始化chipwhisperer，编译目标板固件并上传</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820223931846.png" alt="image-20220820223931846"></p>
+</li>
+<li><p>接下来的代码，就是抓取2500条能量迹</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220820224044381.png" alt="image-20220820224044381"></p>
+</li>
+<li><p>接下来查看MAIN中的Summary，大意是：“在上一个的教程中，你知道了如何利用一个位的信息去恢复一个AES密钥的byte。需要注意的是，这个方法之所以能生效是因为我们攻击的数据流中存在那个S-Box。接下来我们将学习如何用能量分析而不是一个实际的bit去恢复AES密钥。这项技术的目标是利用S-Box输出结果的一个bit（无论哪个bit都行）将能量迹分成两部分。如果那个bit的值是1，那么对应的那组数据的能耗将比另一组的要高。这些都基于之前的教程：数据总线中数据的值与能量消耗之间有一定的联系”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821102023449.png" alt="image-20220821102023449"></p>
+</li>
+<li><p>接下来看到如下提示，大意是说：“不需要记住AES复杂的模型-我们可以直接将上一篇的AES模型复制过来”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821103417466.png" alt="image-20220821103417466"></p>
+</li>
+<li><p>如下图，这部分代码确实是上一篇中的AES简单模型。这里之所以能用这个模型是因为，真正的AES模型也包含了这个流程，只是多了其它几个流程。DPA分析AES时，不需要知道这个流程具体发生在能量迹的哪个时间点，但是整个能量迹的时间段需要包含这个流程发生的时间段，不然就无法分析（都没抓取到，当然无法分析）。</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821103614196.png" alt="image-20220821103614196"></p>
+</li>
+<li><p>接下来的提示，是说完成生成能量迹的代码，可以选择模拟或者硬件的代码复制过来。这里上面已经复制了硬件的代码运行了，所以直接跳过到下一个节点</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104401058.png" alt="image-20220821104401058"></p>
+</li>
+<li><p>往下掉提示是完成画图的代码，画出一到两条能量迹</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104723654.png" alt="image-20220821104723654"></p>
+</li>
+<li><p>接着是查看输入数据是什么样的</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821104821718.png" alt="image-20220821104821718"></p>
+</li>
+<li><p>接下来的提示是说：这个攻击需要用一个方法将能量迹分成两组，分组的依据是我们猜测的值中的一个bit。这里为了简单起见，先猜测一个byte的AES密钥。开始之前-需要定义能量迹的数量和每条能量迹的点的数量。可以直接运行下面的代码例子来定义这两个变量</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821105014483.png" alt="image-20220821105014483"></p>
+</li>
+<li><p>接下来的提示信息，大意是：让我们补全代码，将能量迹分成两组，并将两组求平均值，再取两者差的绝对值，最后得到两组中的最大差值。有个需要注意的是使用numpy的mean计算平均值时，需要指定axis&#x3D;0。为了方便测试，还给出了密钥key第一个byte的真实值0x2b。如果遇到问题，往后还有提示。</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821111905404.png" alt="image-20220821111905404"></p>
+</li>
+<li><p>根据上面信息补全代码，运行后如下图所示，可以看到只有0x2b拥有最大的差异值，与上面描述的一致，这样就恢复了key的第一个byte：&quot;0x2b&quot;</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/2022-08-21.11.31.11.png" alt="2022-08-21.11.31.11"></p>
+</li>
+<li><p>接下来思考，这个方法为什么生效，为什么可以用aes_internal这个函数来划分两个组？</p>
+<ul>
+<li>可以用aes_internal函数来分组，是因为真正的AES拥有与aes_internal类似的代码片段SubBytes，只不过真正AES还有AddRoundKey、ShiftRows、MixColumns三种操作</li>
+<li>现在假设用相同密钥key加密2500数据样本，并根据其某一次SubBytes的输出的第0个byte的第0位的值来分成&#39;&#39;0&quot;和&quot;1&quot;两组，那么这两组数据所对应的能量迹会有一定的差异（这是前面的知识，指令相同情况下，数据也会对能量消耗产生影响）</li>
+<li>现在使用aes_internal来对某个key加密的能量迹进行分组，如果猜测的密钥guess是真实值，那么分组结果就恰好是某一次SubBytes的输出的第0个byte的第0位的值&#39;0&#39;和&#39;1&#39;的分组，两组数据会有1个bit的明显差异，那么两者的能量消耗会有比较明显的差异，如果guess不是真实值，那么分组结果的&#39;0&#39;和&#39;1&#39;的两组的数据是随机的，两组数据没有明显差异，两组的能量消耗也就不会有太大差异，这就是这个方法可以生效的原因</li>
+</ul>
+</li>
+<li><p>接着往下运行，可以看到如下的信息，大意是说：你想要对猜测结果进行排序，这样可以帮助确定最有可能的值。一个最好的方式就是用一个list保存每个猜测的key的最大差异。然后可以使用numpy的argsort来实现排序。</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821131907341.png" alt="image-20220821131907341"></p>
+</li>
+<li><p>按照上述信息，修改代码后，可以把差异最大的前5的key打印出来，如下图所示</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821132918276.png" alt="image-20220821132918276"></p>
+</li>
+<li><p>接着可以看到，用来计算差异的函数calculate_diffs</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821133033977.png" alt="image-20220821133033977"></p>
+</li>
+<li><p>接着按照提示，运行代码，查看画出不同key对应的差异图，这个图的作用就是：既可以直观的看出不同猜测的key造成的差异，又可以看到哪些位置会出现尖峰</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821133137066.png" alt="image-20220821133137066"></p>
+</li>
+<li><p>接下来就是根据提示信息，完成自动猜测AES密钥所有字节的代码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821133523599.png" alt="image-20220821133523599"></p>
+</li>
+<li><p>补全代码后，运行结果如下图所示，可以看到，猜测正确的寥寥无几（只有第0、5、10个字节这三个是正确），造成这个原因有不少（比如算法实现方式也有关系，如果硬件是CWLITEXMEGA，并且算法选的是AVRCRYPTOLIB，那么这里将直接得到16正确的结果）</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> tqdm <span class="keyword">import</span> tnrange</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="comment">#Store your key_guess here, compare to known_key</span></span><br><span class="line">key_guess = []</span><br><span class="line">known_key = [<span class="number">0x2b</span>, <span class="number">0x7e</span>, <span class="number">0x15</span>, <span class="number">0x16</span>, <span class="number">0x28</span>, <span class="number">0xae</span>, <span class="number">0xd2</span>, <span class="number">0xa6</span>, <span class="number">0xab</span>, <span class="number">0xf7</span>, <span class="number">0x15</span>, <span class="number">0x88</span>, <span class="number">0x09</span>, <span class="number">0xcf</span>, <span class="number">0x4f</span>, <span class="number">0x3c</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> subkey <span class="keyword">in</span> tnrange(<span class="number">0</span>, <span class="number">16</span>, desc=<span class="string">&quot;Attacking Subkey&quot;</span>):</span><br><span class="line">    max_list=[]</span><br><span class="line">    <span class="keyword">for</span> guess <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">256</span>):</span><br><span class="line">        max_diff_value = <span class="built_in">max</span>(calculate_diffs(guess, subkey))</span><br><span class="line">        max_list.append(max_diff_value)</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Subkey &#123;&#125; - most likelv &#123;:02x&#125; (actual &#123;:02x&#125;)&#x27;</span>.<span class="built_in">format</span>(subkey,np.argsort(max_list)[::-<span class="number">1</span>][<span class="number">0</span>], known_key[subkey]))</span><br><span class="line">    </span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821134846876.png" alt="image-20220821134846876"></p>
+</li>
+<li><p>接下来看看教程怎么说这个现象，如下图所示，大意是说：你可能在前面并没有恢复整个密钥？不用担心-造成这个现象是因为有一些其它因素导致的。有一篇关于DPA攻击的文章提到的观点是“你获取了另一个不是正确密钥的强峰（它可能是幽灵峰）”。后面将会有更有效的攻击方法，但是，对于现在，让我们来看一些解决方案：</p>
+<ul>
+<li>增加抓取的能量迹数量（如将2500变成5000或者10000），增加数据有时就可以解决这个问题了，但有时候真正的幽灵峰可能不会消失，这种情况就需要用其它方法。</li>
+<li>修改攻击的目标位数（如第&#39;0&#39;位改为第&#39;3&#39;位）或者综合多个位的结果</li>
+<li>截取数据</li>
+</ul>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821135230198.png" alt="image-20220821135230198"></p>
+</li>
+<li><p>接下来就是按照提示信息，运行一个准备好的DPA攻击代码块</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821140652892.png" alt="image-20220821140652892"></p>
+</li>
+<li><p>接着就看到如下提示信息，大意是让我们画出猜测错误key的前几个可能值和真实key的差异图</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821140828304.png" alt="image-20220821140828304"></p>
+</li>
+<li><p>这里因为第5个subkey猜测恰好是正确的（与教程的例子不同），所以选择第1个subkey画图</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141253823.png" alt="image-20220821141253823"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141405339.png" alt="image-20220821141405339"></p>
+</li>
+<li><p>接着看到如下提示信息，大意是说，通过放大你应该可以看到正确key的峰形会在某些地方拥有比错误key的峰形高。从上图看确实如此，在3000和5000附近的位置，正确key的尖峰（绿色）很明显，另外两个的则只在2000附近有一个大的尖峰</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141504265.png" alt="image-20220821141504265"></p>
+</li>
+<li><p>然后可以看到如下提示信息，大意是说：取决于你的硬件设备，上图中你会看到一个不错的大尖峰或者多个尖峰。如果有幽灵峰的问题，那么很可能就会有多个尖峰。错误的峰可能与正确的峰错开--所以我们首先可以把所有正确key对应的峰形画出来</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821142643906.png" alt="image-20220821142643906"></p>
+</li>
+<li><p>接下来的提示信息是，大意是说：最后一个技巧是 -- 截取数据的一些片段会很有用。例如，从上图可以看到，正确的峰图总是每隔60个周期出现，第一个峰出现在附近1100（这个对于你的硬件可能有所不同）。然后就是提示如何修改代码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821143256050.png" alt="image-20220821143256050"></p>
+</li>
+<li><p>最后按照提示做了如下修改，从3220出开始，截取能量迹的数据，这里可以不按每个subkey隔60时钟周期取值，因为实测这样效果更好</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> tqdm <span class="keyword">import</span> tnrange</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="comment">#Store your key_guess here, compare to known_key</span></span><br><span class="line">key_guess = []</span><br><span class="line">known_key = [<span class="number">0x2b</span>, <span class="number">0x7e</span>, <span class="number">0x15</span>, <span class="number">0x16</span>, <span class="number">0x28</span>, <span class="number">0xae</span>, <span class="number">0xd2</span>, <span class="number">0xa6</span>, <span class="number">0xab</span>, <span class="number">0xf7</span>, <span class="number">0x15</span>, <span class="number">0x88</span>, <span class="number">0x09</span>, <span class="number">0xcf</span>, <span class="number">0x4f</span>, <span class="number">0x3c</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment">#Which bit to target</span></span><br><span class="line">bitnum = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">full_diffs_list = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> subkey <span class="keyword">in</span> tnrange(<span class="number">0</span>, <span class="number">16</span>, desc=<span class="string">&quot;Attacking Subkey&quot;</span>):</span><br><span class="line">    </span><br><span class="line">    max_diffs = [<span class="number">0</span>]*<span class="number">256</span></span><br><span class="line">    full_diffs = [<span class="number">0</span>]*<span class="number">256</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> guess <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">256</span>):</span><br><span class="line">        full_diff_trace = calculate_diffs(guess, subkey, bitnum)</span><br><span class="line">        full_diff_trace = full_diff_trace[(<span class="number">3220</span> + subkey*<span class="number">0</span>):]</span><br><span class="line">        max_diffs[guess] = np.<span class="built_in">max</span>(full_diff_trace)</span><br><span class="line">        full_diffs[guess] = full_diff_trace</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Make copy of the list</span></span><br><span class="line">    full_diffs_list.append(full_diffs[:])</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Get argument sort, as each index is the actual key guess.</span></span><br><span class="line">    sorted_args = np.argsort(max_diffs)[::-<span class="number">1</span>]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Keep most likely</span></span><br><span class="line">    key_guess.append(sorted_args[<span class="number">0</span>])</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Print results</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Subkey %2d - most likely %02X (actual %02X)&quot;</span>%(subkey, key_guess[subkey], known_key[subkey]))</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Print other top guesses</span></span><br><span class="line"><span class="comment">#     print(&quot; Top 5 guesses: &quot;)</span></span><br><span class="line"><span class="comment">#     for i in range(0, 5):</span></span><br><span class="line"><span class="comment">#         g = sorted_args[i]</span></span><br><span class="line"><span class="comment">#         print(&quot;   %02X - Diff = %f&quot;%(g, max_diffs[g]))</span></span><br><span class="line">    </span><br><span class="line"><span class="comment">#     print(&quot;\n&quot;)</span></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821145417898.png" alt="image-20220821145417898"></p>
+</li>
+<li><p>最后运行结果，如下图所示，猜测准确的字节数由原来的3个字节提升到全部字节都猜测正确，不得不说，这个提升很大</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821145256193.png" alt="image-20220821145256193"></p>
+</li>
+<li><p>这里解释下为什么从3220的位置开始截取能量迹数据而不是2000附近的位置开始？-- 如下图，因为2000附近的位置除了正确的key会出现尖峰外，错误的key也会出现尖峰，所以需要寻找一个只有正确的key会出现明显尖峰的地方作为数据截取的起始点</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/image-20220821141405339.png" alt="image-20220821141405339"></p>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>学习了如何利用差分能量分析(DPA)来恢复整个AES密钥</li>
+<li>了解了幽灵峰的现象，以及一些解决方法</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB/" rel="tag"># 侧信道攻击</a>
+              <a href="/tags/%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90/" rel="tag"># 差分能量分析</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/" rel="prev" title="侧信道攻击学习笔记4-利用1个Bit恢复数据">
+      <i class="fa fa-chevron-left"></i> 侧信道攻击学习笔记4-利用1个Bit恢复数据
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B06-%E6%B1%89%E6%98%8E%E9%87%8D%E9%87%8F%E5%92%8C%E8%83%BD%E8%80%97%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB/" rel="next" title="侧信道攻击学习笔记6-汉明重量和能耗之间的关系">
+      侧信道攻击学习笔记6-汉明重量和能耗之间的关系 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '4f5266ced3a7a3e06a53a4766dadb71b',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

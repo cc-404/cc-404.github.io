@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第十三章PE文件格式介绍 PE（Portable Executable）是Windows下的可执行文件，是微软在UNIX平台的COFF（Common Object File Format）基础上制作的。最初（正如Portable这个单词所代表那样）设计用来提高程序在不同操作系统的移植性，但实际上这种文件格式只有在Windows系列的操作系统能运行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记7">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第十三章PE文件格式介绍 PE（Portable Executable）是Windows下的可执行文件，是微软在UNIX平台的COFF（Common Object File Format）基础上制作的。最初（正如Portable这个单词所代表那样）设计用来提高程序在不同操作系统的移植性，但实际上这种文件格式只有在Windows系列的操作系统能运行">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/2021-11-26.11.20.31.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129162653285.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126153219527.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126154540657.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126154234660.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126160216935.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126162223300.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126162404348.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126162617566.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126163011504.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126163316314.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211127170006761.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129104554159.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129162653285.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129215650794.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130092303445.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130094432647.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130101448622.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130102614648.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130134400940.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130134720401.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130135523901.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130140535517.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130142823529.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130172628462.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130164239802.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130184544649.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130185039095.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130185745351.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130191850713.png">
+<meta property="article:published_time" content="2021-11-26T01:21:38.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:16.358Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/2021-11-26.11.20.31.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记7 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记7
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-26 09:21:38" itemprop="dateCreated datePublished" datetime="2021-11-26T09:21:38+08:00">2021-11-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:16" itemprop="dateModified" datetime="2024-10-16T13:19:16+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第十三章"><a href="#逆向工程核心原理第十三章" class="headerlink" title="逆向工程核心原理第十三章"></a>逆向工程核心原理第十三章</h3><h4 id="PE文件格式"><a href="#PE文件格式" class="headerlink" title="PE文件格式"></a>PE文件格式</h4><h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><ul>
+<li>PE（Portable Executable）是Windows下的可执行文件，是微软在UNIX平台的COFF（Common Object File Format）基础上制作的。最初（正如Portable这个单词所代表那样）设计用来提高程序在不同操作系统的移植性，但实际上这种文件格式只有在Windows系列的操作系统能运行</li>
+</ul>
+<span id="more"></span>
+
+<h5 id="PE文件格式-1"><a href="#PE文件格式-1" class="headerlink" title="PE文件格式"></a>PE文件格式</h5><table>
+<thead>
+<tr>
+<th align="center">种类</th>
+<th align="center">主扩展名</th>
+<th align="center">种类</th>
+<th align="center">主扩展名</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">可执行系列</td>
+<td align="center">EXE、SRC</td>
+<td align="center">驱动程序系列</td>
+<td align="center">SYS、VXD</td>
+</tr>
+<tr>
+<td align="center">库系列</td>
+<td align="center">DLL、OCX、CPL、DRV</td>
+<td align="center">对象文件系列</td>
+<td align="center">OBJ</td>
+</tr>
+</tbody></table>
+<ul>
+<li><p>除OBJ（对象）文件外，所有文件都是可执行的，DLL、SYS等虽然不能直接在Shell（Explorer.exe）运行，但可以使用其他方法（调试器、服务等）执行。</p>
+</li>
+<li><p>用十六进制编辑器打开win10的notepad.exe，查看PE文件的特征，下图为PE文件的头部分（PE header），notepad.exe运行所需要的DLL有哪些、需要多大的栈&#x2F;堆内存这些信息就包含在这个PE头中</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/2021-11-26.11.20.31.png" alt="2021-11-26.11.20.31"></p>
+</li>
+<li><p>从DOS头（DOS header）到节区头（Section header）是PE头部分，其余的节区合称PE体(PE body)。文件中使用偏移（offset），内存中使用VA（Virtual Address，虚拟地址）来表示位置。文件加载到内存时，情况就会发生变化（节区的大小、位置等）。文件等内容一般可分为（.text）、数据（.data）、资源（.rsrc）节，分别保存。</p>
+</li>
+<li><p>各节区头定义了各节区在文件或内存中的大小、位置、属性等。PE头与各节区尾部存在一个区域，称为NULL填充（NULL padding）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129162653285.png" alt="image-20211129162653285"></p>
+</li>
+</ul>
+<h5 id="VA与RVA"><a href="#VA与RVA" class="headerlink" title="VA与RVA"></a>VA与RVA</h5><ul>
+<li><p>VA指的是进程虚拟内存的绝对地址，RVA（Relative Virtual Address，相对虚拟地址）指从某个基准位置（ImageBase）开始的相对地址，VA与RVA满足以下换算关系</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RVA + ImageBase = VA</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h5 id="PE头"><a href="#PE头" class="headerlink" title="PE头"></a>PE头</h5><ul>
+<li><p>DOS头：为了兼容DOS，PE头最前面有个IMAGE_DOS_HEADER结构体</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_DOS_HEADER</span></span><br><span class="line">&#123;</span><br><span class="line">     WORD e_magic;	<span class="comment">// DOS signature: 4D5A(&quot;MZ&quot;)</span></span><br><span class="line">     WORD e_cblp;</span><br><span class="line">     WORD e_cp;</span><br><span class="line">     WORD e_crlc;</span><br><span class="line">     WORD e_cparhdr;</span><br><span class="line">     WORD e_minalloc;</span><br><span class="line">     WORD e_maxalloc;</span><br><span class="line">     WORD e_ss;</span><br><span class="line">     WORD e_sp;</span><br><span class="line">     WORD e_csum;</span><br><span class="line">     WORD e_ip;</span><br><span class="line">     WORD e_cs;</span><br><span class="line">     WORD e_lfarlc;</span><br><span class="line">     WORD e_ovno;</span><br><span class="line">     WORD e_res[<span class="number">4</span>];</span><br><span class="line">     WORD e_oemid;</span><br><span class="line">     WORD e_oeminfo;</span><br><span class="line">     WORD e_res2[<span class="number">10</span>];</span><br><span class="line">     LONG e_lfanew;	<span class="comment">// offset to NT header</span></span><br><span class="line">&#125; IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>IMAGE_DOS_HEADER结构体大小为64个字节，其中有两个比较重要的成员e_magic和e_lfanew</p>
+<ul>
+<li>e_magic: DOS签名（固定值，&quot;4D5A&quot;&#x3D;&gt;ASCII值&quot;MZ&quot;&#x3D;&gt;&quot;Mark Zbikowski&quot;首字母）</li>
+<li>e_lfanew: 指示NT头的偏移（根据不同文件拥有可变值）</li>
+</ul>
+</li>
+<li><p>用Hex Editor打开notepad.exe查看IMAGE_DOS_HEADER结构体，根据PE规范文件开始的2个字节为&quot;4D5A&quot;，e_lfanew值为&quot;00000100&quot;而不是&quot;00010000&quot;（小端序存储，低位在前）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126153219527.png" alt="image-20211126153219527"></p>
+</li>
+<li><p>这里有个奇怪的地方，是这样的，同一个notepad.exe用010 editor和HexEdit打开，e_lfanew的值是不一样的，但两者都指向了正确位置，从下图可以看到010 editor的e_lfanew值为&quot;000000F8&quot;，对比010 editor和Hex Editor两者，发现两者主要区别是从地址&quot;000000E4&quot;开始，010 editor要少一些00，从这点上来推测是跟NULL填充有关。另外试了WinHex，结果跟HexEdit一样；试了BeyondCompare，结果跟010 editor一样；所以这并不能推断出两者谁对谁错或者都是对的，这里记下问题，待后续学习解决。不过无论是010 editor还是HexEdit，e_lfanew值都是正确指向了NT头的位置。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126154540657.png" alt="image-20211126154540657"></p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126154234660.png" alt="image-20211126154234660"></p>
+</li>
+</ul>
+<h5 id="DOS存根"><a href="#DOS存根" class="headerlink" title="DOS存根"></a>DOS存根</h5><ul>
+<li><p>DOS存根在DOS头下方，是个可选项，且大小不固定（即使没有DOS存根，文件也能正常运行）</p>
+</li>
+<li><p>DOS存根由代码与数据混合而成，下图展示了DOS存根所在位置，其中在40～4D区域为16位汇编指令，Windows中不会执行该命令，（因为被识别为PE文件所以完全忽视该代码），在DOS环境中则可以运行那部分代码（不认识PE文件格式，被识别为DOS EXE文件）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126160216935.png" alt="image-20211126160216935"></p>
+</li>
+<li><p>接下来测试下这部分dos命令，因为这里用的是win10，所以cmd命令行已经没有debug命令了，要像书中那样测试，就需要用到<a target="_blank" rel="noopener" href="https://www.dosbox.com/">DOSBox</a>和<a target="_blank" rel="noopener" href="https://github.com/Microsoft/MS-DOS">MS-DOS</a>，来测试。</p>
+</li>
+<li><p>下载安装好DOSBox后，打开DOSBox，可以看到以下界面，DOSBox默认没有挂载我们的硬盘，需要我们自己挂载硬盘路径</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126162223300.png" alt="image-20211126162223300"></p>
+</li>
+<li><p>运行命令<code>mount c c:\</code>，挂载C盘，出现以下信息说明挂载成功</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126162404348.png" alt="image-20211126162404348"></p>
+</li>
+<li><p>接下来我们进入MS-DOS的解压路径</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">c: <span class="comment"># 切换c盘</span></span><br><span class="line"><span class="built_in">cd</span> USERS\CC\DESKTOP\MS<span class="literal">-DOS</span>\V2.<span class="number">0</span>\BIN <span class="comment"># MS-DOS解压后的v2.0 bin所在路径</span></span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126162617566.png" alt="image-20211126162617566"></p>
+</li>
+<li><p>执行<code>DEBUG.COM C:\WINDOWS\SYSTEM32\NOTEPAD.EXE</code>，如下图出现了16位汇编指令</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126163011504.png" alt="image-20211126163011504"></p>
+</li>
+<li><p>我们还可以用DOSBox直接运行notepad.exe，如下图，可以看到DOS下运行notepad.exe会出现&quot;This program cannot be run in DOS mode.&quot;</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211126163316314.png" alt="image-20211126163316314"></p>
+</li>
+<li><p>利用以上特性就可以编写出可以同时在DOS和Windows运行的程序</p>
+</li>
+</ul>
+<h5 id="NT头"><a href="#NT头" class="headerlink" title="NT头"></a>NT头</h5><ul>
+<li><p>NT头IMAGE_NT_HEADERS</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_NT_HEADERS</span> &#123;</span><br><span class="line">  DWORD                   Signature; <span class="comment">// PE Signature : 50450000(&quot;PE&quot;00)</span></span><br><span class="line">  IMAGE_FILE_HEADER       FileHeader;</span><br><span class="line">  IMAGE_OPTIONAL_HEADER32 OptionalHeader;</span><br><span class="line">&#125; IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>NT头包含文件头和可选头，下面介绍文件头和可选头结构体</p>
+</li>
+<li><p>文件头（_IMAGE_FILE_HEADER）是表现文件大致属性的IMAGE_FILE_HEADER结构体</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_FILE_HEADER</span> &#123;</span><br><span class="line">    WORD    Machine;</span><br><span class="line">    WORD    NumberOfSections;</span><br><span class="line">    DWORD   TimeDateStamp;</span><br><span class="line">    DWORD   PointerToSymbolTable;</span><br><span class="line">    DWORD   NumberOfSymbols;</span><br><span class="line">    WORD    SizeOfOptionalHeader;</span><br><span class="line">    WORD    Characteristics;</span><br><span class="line">&#125; IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>IMAGE_FILE_HEADER结构体有以下4种重要成员</p>
+<ul>
+<li>Machine: 每个CPU都有唯一的Machine码，兼容32位Intel x86芯片的Machine码为14C，兼容64位AMD x64芯片的Machine码为8664，分别用010 editor和Hex Edit打开C:\Windows\System32\notepad.exe，010 editor识别的机器码是8664，Hex Edit则14C，说明一个识别为64位，另一个则识别为32位，这里推测原因是：010 editor是64位的程序，Hex Edit为32位，notepad.exe文件在64位虚拟内存和32位虚拟内存中是有差异的。这种差异应该也是造成上面e_lfanew不一样的原因。</li>
+<li>NumberOfSections: 用来指出PE文件中存在的节区数量，该值一定要大于0，且当定义的节区数与实际节区不同时，将运行出错</li>
+<li>SizeOfOptionalHeader: IMAGE_NT_HEADERS结构体最后一个成员为IMAGE_OPTIONAL_HEADER32结构体，SizeOfOptionalHeader用来指出IMAGE_OPTIONAL_HEADER32结构体长度供PE装载器识别。PE32+文件中使用的是IMAGE_OPTIONAL_HEADER64，而不是IMAGE_OPTIONAL_HEADER32，两者大小不同，因此需要SizeOfOptionalHeader中指出结构体的大小。</li>
+<li>Characteristics: 该字段用于标识文件的属性（文件是否可执行、是否为DLL等信息），以bit OR形式组合起来</li>
+</ul>
+</li>
+<li><p>可选头（IMAGE_OPTIONAL_HEADER32）是PE头结构体中最大的</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_DATA_DIRECTORY</span> &#123;</span><br><span class="line">  DWORD VirtualAddress;</span><br><span class="line">  DWORD Size;</span><br><span class="line">&#125; IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;</span><br></pre></td></tr></table></figure>
+
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_OPTIONAL_HEADER</span> &#123;</span><br><span class="line">  WORD                 Magic;</span><br><span class="line">  BYTE                 MajorLinkerVersion;</span><br><span class="line">  BYTE                 MinorLinkerVersion;</span><br><span class="line">  DWORD                SizeOfCode;</span><br><span class="line">  DWORD                SizeOfInitializedData;</span><br><span class="line">  DWORD                SizeOfUninitializedData;</span><br><span class="line">  DWORD                AddressOfEntryPoint;</span><br><span class="line">  DWORD                BaseOfCode;</span><br><span class="line">  DWORD                BaseOfData;</span><br><span class="line">  DWORD                ImageBase;</span><br><span class="line">  DWORD                SectionAlignment;</span><br><span class="line">  DWORD                FileAlignment;</span><br><span class="line">  WORD                 MajorOperatingSystemVersion;</span><br><span class="line">  WORD                 MinorOperatingSystemVersion;</span><br><span class="line">  WORD                 MajorImageVersion;</span><br><span class="line">  WORD                 MinorImageVersion;</span><br><span class="line">  WORD                 MajorSubsystemVersion;</span><br><span class="line">  WORD                 MinorSubsystemVersion;</span><br><span class="line">  DWORD                Win32VersionValue;</span><br><span class="line">  DWORD                SizeOfImage;</span><br><span class="line">  DWORD                SizeOfHeaders;</span><br><span class="line">  DWORD                CheckSum;</span><br><span class="line">  WORD                 Subsystem;</span><br><span class="line">  WORD                 DllCharacteristics;</span><br><span class="line">  DWORD                SizeOfStackReserve;</span><br><span class="line">  DWORD                SizeOfStackCommit;</span><br><span class="line">  DWORD                SizeOfHeapReserve;</span><br><span class="line">  DWORD                SizeOfHeapCommit;</span><br><span class="line">  DWORD                LoaderFlags;</span><br><span class="line">  DWORD                NumberOfRvaAndSizes;</span><br><span class="line">  IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];</span><br><span class="line">&#125; IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在IMAGE_OPTIONAL_HEADER32结构体中比较重要的成员，有以下几个：</p>
+<ul>
+<li><p>Magic：为IMAGE_OPTIONAL_HEADER32时为10B，为IMAGE_OPTIONAL_HEADER64时为20B</p>
+</li>
+<li><p>AddressOfEntryPoint：EP的RVA值，这个值指出程序最先执行的代码起始地址，非常重要</p>
+</li>
+<li><p>ImageBase：32位系统中进程虚拟地址为0～FFFFFFFF，PE文件被加载到如此大的内存中时，ImageBase指出文件的优先装入地址。EXE、DLL被装载在0～7FFFFFFF中，SYS文件被载入内核内存的80000000～FFFFFFFF中。一般使用开发工具（VB&#x2F;VC++&#x2F;Delphi）创建好EXE文件后，其ImageBase值为00400000，DLL文件的ImageBase值为10000000（当然也可以为其他），执行PE文件时，PE装载器先创建进程，再把文件载入内存，然后把EIP寄存器的值设为ImageBase+AddressOfEntryPoint</p>
+</li>
+<li><p>SectionAlignment，FileAlignment：PE文件的Body部分划分为若干个节区，这些节区储存着不同类别的数据。FileAlignment指定了节区在磁盘文件中的最小单位，而SectionAlignment则指定了节区在内存中的最小单位（一个文件中FileAlignment的值与SectionAlignment的值可能相同也可能不相同）。磁盘文件或内存的节区大小必定为FileAlignment或SectionAlignment的整数倍。</p>
+</li>
+<li><p>SizeOfImage：该值指定了PE Image在虚拟内存中所占空间的大小</p>
+</li>
+<li><p>SizeOfHeaders：该值用来指出整个PE头的大小，值必须为FileAlignment的整数倍。第一节区所在位置与SizeOfHeaders距文件开始偏移的量相同。</p>
+</li>
+<li><p>Subsystem：该值用来区分系统驱动文件（*.sys）与普通的可执行文件（*.exe，*.dll）。Subsystem成员可拥有的值如下所示</p>
+<table>
+<thead>
+<tr>
+<th align="center">值</th>
+<th align="center">含义</th>
+<th align="center">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">Driver文件</td>
+<td align="center">系统驱动（如：ntfs.sys）</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">GUI文件</td>
+<td align="center">窗口应用程序（如：notepad.exe）</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">CUI文件</td>
+<td align="center">控制台应用程序（如：cmd.exe）</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>NumberOfRvaAndSizes：用来指定DataDirectory（IMAGE_OPTIONAL_HEADER32结构体最后一个成员）数组的个数，供PE装载器识别</p>
+</li>
+<li><p>DataDirectory：由IMAGE_DATA_DIRECTORY结构体组成的数组，数组的每项都有被定义的值，DataDirectory的值如下，比较重要的是前两个</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">DataDirectory[<span class="number">0</span>] = EXPORT Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">1</span>] = IMPORT Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">2</span>] = RESOURCE Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">3</span>] = EXCEPTION Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">4</span>] = SECURITY Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">5</span>] = BASERELOC Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">6</span>] = DEBUG Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">7</span>] = COPYRIGHT Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">8</span>] = GLOBALPTR Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[<span class="number">9</span>] = TLS Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[A] = LOAD_CONFIG Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[B] = BOUND_IMPORT Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[C] = IAT Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[D] = DELAY_IMPORT Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[E] = COM_DESCRIPTOR Directory</span><br><span class="line"></span><br><span class="line">DataDirectory[F] = Reserved Directory</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>notepad.exe中IMAGE_OPTIONAL_HEADER32的结构体如下所示：</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211127170006761.png" alt="image-20211127170006761"></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line">[ IMAGE_OPTIONAL_HEADER ]</span><br><span class="line">offset		value		description</span><br><span class="line">=======================================================================================</span><br><span class="line">00000108	010B	magic</span><br><span class="line">0000011A	0E	major linker version</span><br><span class="line">0000011B	14	minor linker version</span><br><span class="line">0000011C	00022400	size of code</span><br><span class="line">00000120	00007600	size of initialized data</span><br><span class="line">00000124	00000000	size of uninitialized data</span><br><span class="line">00000128	00021860	address of entry point</span><br><span class="line">0000012C	00001000	base of code</span><br><span class="line">00000130	00024000	base of data</span><br><span class="line">00000134	00400000	image base</span><br><span class="line">00000138	00001000	section alignment</span><br><span class="line">0000013C	00000200	file alignment</span><br><span class="line">00000140	000A	major OS version</span><br><span class="line">00000142	0000	minor OS version</span><br><span class="line">00000144	000A	major image version</span><br><span class="line">00000146	0000	minor image version</span><br><span class="line">00000148	000A	major subsystem version</span><br><span class="line">0000014A	0000	minor subsustem version</span><br><span class="line">0000014C	00000000	win32 version value</span><br><span class="line">00000150	0002E000	size of image</span><br><span class="line">00000154	00000400	size of headers</span><br><span class="line">00000158	0002C834	Checksum</span><br><span class="line">0000015C	0002	subsystem</span><br><span class="line">0000015E	C140	DLL characteristic</span><br><span class="line">00000160	00040000	size of stack reserve</span><br><span class="line">00000164	00011000	size of stack commit</span><br><span class="line">00000168	00100000	size of heap reserve</span><br><span class="line">0000016C	00001000	size of heap commit</span><br><span class="line">00000170	00000000	loader flags</span><br><span class="line">00000174	00000010	number of directories</span><br><span class="line">00000178	00000000	RVA of export directory</span><br><span class="line">0000017C	00000000	size of export directory</span><br><span class="line">00000180	0002647C	RVA of import directory</span><br><span class="line">00000184	0000021C	size of import directory</span><br><span class="line">00000188	0002A000	RVA of resource directory</span><br><span class="line">0000018C	00000BD8	size of resource directory</span><br><span class="line">00000190	00000000	RVA of exception directory</span><br><span class="line">00000194	00000000	size of exception directory</span><br><span class="line">00000198	00000000	RVA of security directory</span><br><span class="line">0000019C	00000000	size of security directory</span><br><span class="line">000001A0	0002B000	RVA of basereloc directory</span><br><span class="line">000001A4	00002428	size of basereloc directory</span><br><span class="line">000001A8	00004FA0	RVA of debug directory</span><br><span class="line">000001AC	00000054	size of debug directory</span><br><span class="line">000001B0	00000000	RVA of copyright directory</span><br><span class="line">000001B4	00000000	size of copyright directory</span><br><span class="line">000001B8	00000000	RVA of globallptr directory</span><br><span class="line">000001BC	00000000	size of globallptr directory</span><br><span class="line">000001C0	0000140C	RVA of TLS directory</span><br><span class="line">000001C4	00000018	size of TLS directory</span><br><span class="line">000001C8	00001360	RVA of LOAD_CONFIG directory</span><br><span class="line">000001CC	000000AC	size of LOAD_CONFIG directory</span><br><span class="line">000001F0	00000000	RVA of BOUND_IMPORT directory</span><br><span class="line">000001F4	00000000	size of BOUND_IMPORT directory</span><br><span class="line">000001F8	00026000	RVA of IAT directory</span><br><span class="line">000001FC	00000478	size of IAT directory</span><br><span class="line">000001E0	00022E48	RVA of DELAY_IMPORT directory</span><br><span class="line">000001E4	000000E0	size of DELAY_IMPORT directory</span><br><span class="line">000001E8	00000000	RVA of COM_DESCRIPTOR directory</span><br><span class="line">000001EC	00000000	size of COM_DESCRIPTOR directory</span><br><span class="line">000001F0	00000000	RVA of reserved directory</span><br><span class="line">000001F4	00000000	size of reserved directory</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>节区头：节区头是由IMAGE_SECTION_HEADER结构体组成的数组，每个结构体对应一个节区，节区头定义了各节区属性，不同内存属性的访问权限如下</p>
+<table>
+<thead>
+<tr>
+<th align="center">类别</th>
+<th align="center">访问权限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">code</td>
+<td align="center">执行，读取权限</td>
+</tr>
+<tr>
+<td align="center">data</td>
+<td align="center">非执行，读写权限</td>
+</tr>
+<tr>
+<td align="center">resource</td>
+<td align="center">非执行，读取权限</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>IMAGE_SECTION_HEADER结构体如下所示</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"># <span class="keyword">define</span> IMAGE_SIZEOF_SHORT_NAME	8</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_SECTION_HEADER</span> &#123;</span><br><span class="line">  BYTE  Name[IMAGE_SIZEOF_SHORT_NAME];</span><br><span class="line">  <span class="keyword">union</span> &#123;</span><br><span class="line">    DWORD PhysicalAddress;</span><br><span class="line">    DWORD VirtualSize;</span><br><span class="line">  &#125; Misc;</span><br><span class="line">  DWORD VirtualAddress;</span><br><span class="line">  DWORD SizeOfRawData;</span><br><span class="line">  DWORD PointerToRawData;</span><br><span class="line">  DWORD PointerToRelocations;</span><br><span class="line">  DWORD PointerToLinenumbers;</span><br><span class="line">  WORD  NumberOfRelocations;</span><br><span class="line">  WORD  NumberOfLinenumbers;</span><br><span class="line">  DWORD Characteristics;</span><br><span class="line">&#125; IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;</span><br></pre></td></tr></table></figure></li>
+<li><p>IMAGE_SECTION_HEADER重要成员</p>
+<table>
+<thead>
+<tr>
+<th align="center">项目</th>
+<th align="center">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">VirtualSize</td>
+<td align="center">内存中节区所占大小</td>
+</tr>
+<tr>
+<td align="center">VirtualAddress</td>
+<td align="center">内存中节区起始地址（RVA）</td>
+</tr>
+<tr>
+<td align="center">SizeOfRawData</td>
+<td align="center">磁盘文件中节区所占大小</td>
+</tr>
+<tr>
+<td align="center">PointerToRawData</td>
+<td align="center">磁盘文件中节区起始位置</td>
+</tr>
+<tr>
+<td align="center">Characteristics</td>
+<td align="center">节区属性（bit OR）</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>VirtualAddress和PointerToRawData不带有任何值，分别由（定义在IMAGE_OPTIONAL_HEADER32中的）SectionAlignment，FileAlignment确定。</p>
+</li>
+<li><p>VirtualSize与SizeOfRawData一般有不同的值，即磁盘文件中节区的大小与加载到内存中的节区大小是不同的</p>
+</li>
+<li><p>Characteristics的值由多个值组合（bit OR）而成</p>
+</li>
+<li><p>Name成员：Name成员不像C语言中的字符串一样以NULL结束，并且没有&quot;必须使用ASCII值&quot;的限制。PE规范未明确规定节区的Name，所以可以向其中放入任何值，甚至可以填充NULL值，所以节区Name仅供参考，不能保证其百分之百地被用作某种信息。</p>
+</li>
+<li><p>notepad.exe的节区头数据，如下图所示</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129104554159.png" alt="image-20211129104554159"></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line">[ IMAGE_SECTION_HEADER ]</span><br><span class="line">offset	value	descriptrion</span><br><span class="line">=======================================================================================</span><br><span class="line">000001F8	2E746578	Name(.text)</span><br><span class="line">000001FC	74000000</span><br><span class="line">00000200	000223B8	virtual size</span><br><span class="line">00000204	00001000	RVA</span><br><span class="line">00000208	00022400	size of raw data</span><br><span class="line">0000020C	00000400	offset to raw data</span><br><span class="line">00000210	00000000	offset to relocations</span><br><span class="line">00000214	00000000	offset to line numbers</span><br><span class="line">00000218		0000	number of relocations</span><br><span class="line">0000021A		0000	number of line numbers</span><br><span class="line">0000021C	60000020	characteristics</span><br><span class="line"></span><br><span class="line">00000220	2E646174	Name(.data)</span><br><span class="line">00000224	61000000</span><br><span class="line">00000228	00001F74	virtual size</span><br><span class="line">0000022C	00024000	RVA</span><br><span class="line">00000230	00000A00	size of raw data</span><br><span class="line">00000234	00022800	offset to raw data</span><br><span class="line">00000238	00000000	offset to relocations</span><br><span class="line">0000023C	00000000	offset to line numbers</span><br><span class="line">00000240		0000	number of relocations</span><br><span class="line">00000242		0000	number of line numbers</span><br><span class="line">00000244	C0000040	characteristics</span><br><span class="line"></span><br><span class="line">00000248	2E696461	Name(.idata)</span><br><span class="line">0000024C	74610000</span><br><span class="line">00000250	0000214E	virtual size</span><br><span class="line">00000254	00026000	RVA</span><br><span class="line">00000258	00002200	size of raw data</span><br><span class="line">0000025C	00023200	offset to raw data</span><br><span class="line">00000260	00000000	offset to relocations</span><br><span class="line">00000264	00000000	offset to line numbers</span><br><span class="line">00000268		0000	number of relocations</span><br><span class="line">0000026A		0000	number of line numbers</span><br><span class="line">0000026C	40000040	characteristics</span><br><span class="line"></span><br><span class="line">00000270	2E646964	Name(.didat)</span><br><span class="line">00000274	61740000</span><br><span class="line">00000278	000000BC	virtual size</span><br><span class="line">0000027C	00029000	RVA</span><br><span class="line">00000280	00000200	size of raw data</span><br><span class="line">00000284	00025400	offset to raw data</span><br><span class="line">00000288	00000000	offset to relocations</span><br><span class="line">0000028C	00000000	offset to line numbers</span><br><span class="line">00000290		0000	number of relocations</span><br><span class="line">00000292		0000	number of line numbers</span><br><span class="line">00000294	C0000040	characteristics</span><br><span class="line"></span><br><span class="line">00000298	2E727372	Name(.rsrc)</span><br><span class="line">0000029C	63000000</span><br><span class="line">000002A0	00000BD8	virtual size</span><br><span class="line">000002A4	0002A000	RVA</span><br><span class="line">000002A8	00000C00	size of raw data</span><br><span class="line">000002AC	00025600	offset to raw data</span><br><span class="line">000002B0	00000000	offset to relocations</span><br><span class="line">000002B4	00000000	offset to line numbers</span><br><span class="line">000002B8		0000	number of relocations</span><br><span class="line">000002BA		0000	number of line numbers</span><br><span class="line">000002BC	40000040	characteristics</span><br><span class="line"></span><br><span class="line">000002C0	2E72656C	Name(.reloc)</span><br><span class="line">000002C4	6F630000</span><br><span class="line">000002C8	00002428	virtual size</span><br><span class="line">000002CC	0002B000	RVA</span><br><span class="line">000002D0	00002600	size of raw data</span><br><span class="line">000002D4	00026200	offset to raw data</span><br><span class="line">000002D8	00000000	offset to relocations</span><br><span class="line">000002DC	00000000	offset to line numbers</span><br><span class="line">000002E0		0000	number of relocations</span><br><span class="line">000002E2		0000	number of line numbers</span><br><span class="line">000002E4	42000040	characteristics</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h5 id="RVA-to-RAW"><a href="#RVA-to-RAW" class="headerlink" title="RVA to RAW"></a>RVA to RAW</h5><ul>
+<li><p>PE文件加载到内存时，每个节区都要能准确完成内存地址与文件偏移的映射，这种映射一般称为RVA to RAW，方法如下：</p>
+<ul>
+<li><p>查找RVA所在节区</p>
+</li>
+<li><p>使用简单公式计算文件偏移（RAW）</p>
+</li>
+<li><p>根据IMAGE_SECTION_HEADER结构体，换算公式如下：</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">RAW - PointerToRawData = RVA - VirtualAdress</span><br><span class="line"></span><br><span class="line">RAW = RVA - VirtualAdress + PointerToRawData</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>下图为win10 notepad.exe的文件与内存间的映射关系</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129162653285.png" alt="image-20211129162653285"></p>
+</li>
+<li><p>测试练习（注：这里notepad.exe文件与内存映射关系跟《逆向工程核心原理》书中不一样是因为notepad.exe的版本不一样）</p>
+<ul>
+<li><p>Q1: RVA&#x3D;5000时，File Offset&#x3D;?</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">A1:首先查找RVA值所在节区。</span><br><span class="line">	=&gt; RVA 5000位于第一个节区(.text)(假设ImageBase为00400000)</span><br><span class="line">	使用公式换算如下：</span><br><span class="line">	=&gt; RAW = 5000(RVA)-1000(VirtualAddress)+400(PointerToRawData)=4400</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Q2:RVA&#x3D;13314时，File Offset&#x3D;?</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">A2:查找RVA值所在节区。</span><br><span class="line">	=&gt; RVA 13314位于第一个节区(.text)</span><br><span class="line">	使用公式换算如下：</span><br><span class="line">	=&gt; RAW = 13314(RVA)-1000(VirtualAddress)+400(PointerToRawData)=12714</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Q3:RVA&#x3D;时25999，File Offset&#x3D;?</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">A3:查找RVA值所在节区。</span><br><span class="line">	=&gt; RVA 25999位于第二节区(.data)</span><br><span class="line">	使用公式换算如下：</span><br><span class="line">	=&gt; RAW = 25999(RVA)-24000(VA)+22800(PointerToRawData)=24799(X)</span><br><span class="line">	=&gt; 计算结果为RAW=24799，但是该偏移在第三个节区(.rsrc)。RVA在第二个节区，而RAW在第三个节区，这显然是错误的。这种情况表明&quot;无法定义与RVA(25999)相对应的RAW值&quot;。出现这种情况的原因在于，第二个节区的VirtualSize值要比SizeOfRawData值大。</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h5 id="IAT"><a href="#IAT" class="headerlink" title="IAT"></a>IAT</h5><ul>
+<li><p>IAT（Import Address Table，导入地址表）：IAT保存的内容与Windows操作系统的核心进程、内存、DLL结构等有关。</p>
+</li>
+<li><p>学习IAT前先学习一下DLL内容（Dynamic Link Library，动态链接库）的知识，16位DOS时代不存在DLL这一概念，只有&quot;库&quot;（Library）一说，编译器编译时会程序调用的外部函数二进制代码加入到程序中，这就造成了磁盘和内存含大量重复的问题，而DLL就是用来解决这一问题的。DLL概念如下：</p>
+<ul>
+<li>不要把库包含到程序中，单独组成DLL文件，需要时调用即可</li>
+<li>内存映射技术使加载后的DLL代码、资源在多个进程中实现共享</li>
+<li>更新库时只要替换相关DLL文件即可，简便易行</li>
+</ul>
+</li>
+<li><p>加载DLL的方式有两种：一种是&quot;显示链接&quot;（Explicit Linking），程序使用DLL时加载，使用完后释放内存。另一种是&quot;隐示链接&quot;（Implicit Linking），程序运行时即一同加载DLL，程序终止时再释放占用内存</p>
+</li>
+<li><p>下图是调用CreateFileW()函数的代码，调用该函数并非直接调用，而是通过读取&quot;763B0FD0&quot;处的值(&quot;75F4FFC0&quot;)来间接调用而不是直接<code>call 75F4FFC0</code>。地址&quot;763B0FD0&quot;是notepad.exe的内存区域（更确切地说是IAT内存区域）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211129215650794.png" alt="image-20211129215650794"></p>
+</li>
+<li><p>IMAGE_IMPORT_DESCRIPTOR，IMAGE_IMPORT_DESCRIPTOR结构体中记录着PE文件要导入哪些库文件，IMAGE_IMPORT_DESCRIPTOR结构体如下所示</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_IMPORT_DESCRIPTOR</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">         DWORD   Characteristics; </span><br><span class="line"></span><br><span class="line">         DWORD   OriginalFirstThunk; <span class="comment">// INT(Import Name Table) address (RVA)</span></span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    DWORD   TimeDateStamp;  </span><br><span class="line"></span><br><span class="line">    DWORD   ForwarderChain;</span><br><span class="line"></span><br><span class="line">    DWORD   Name; <span class="comment">// library name string address (RVA) </span></span><br><span class="line"></span><br><span class="line">    DWORD   FirstThunk; <span class="comment">// IAT(Import Address Table) address (RVA)</span></span><br><span class="line"></span><br><span class="line">&#125; IMAGE_IMPORT_DESCRIPTOR;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> sturct _IMAGE_IMPORT_BY_NAME &#123;</span><br><span class="line">	WORD	Hint;	<span class="comment">// ordinal</span></span><br><span class="line">	BYTE	Name[<span class="number">1</span>];	<span class="comment">// function name string</span></span><br><span class="line">&#125; IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行一个普通程序时，往往需要导入多个库，导入多少库就存在多少个IMAGE_IMPORT_DESCRIPTOR结构体，这些结构体形成了数组，且结构体数组最后以NULL结构体结束。IMAGE_IMPORT_DESCRIPTOR中的重要成员如下表所示</p>
+<ul>
+<li>INT与IAT是长整型（4个字节数据类型）数组，以NULL结束</li>
+<li>INT中各元素的值为IMAGE_IMPORT_BY_NAME结构体指针（有时IAT也拥有相同的值）</li>
+<li>INT与IAT大小应相同</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">项 目</th>
+<th align="center">含 义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">OriginalFirstThunk</td>
+<td align="center">INT的地址（RVA）</td>
+</tr>
+<tr>
+<td align="center">Name</td>
+<td align="center">库名称字符串的地址</td>
+</tr>
+<tr>
+<td align="center">FirstThunk</td>
+<td align="center">IAT的地址（RVA）</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>下图描述了notepad.exe的kernel32.dll的IMAGE_IMPORT_DESCRIPTOR结构，图中INT和IAT指向了相同地址，但也有很多情况下它们是不一致的。</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130092303445.png" alt="image-20211130092303445"></p>
+</li>
+<li><p>接下来了解下PE装载器把导入函数输入至IAT的顺序</p>
+<ol>
+<li><p>读取IID的Name成员，获取库名称字符串&quot;kernel32.dll&quot;</p>
+</li>
+<li><p>装载相应库&#x3D;&gt;LoadLibrary(&quot;kernel32.dll&quot;)</p>
+</li>
+<li><p>读取IID的OriginalFirstThunk成员，获取INT地址</p>
+</li>
+<li><p>逐一读取INT中数组的值，获取相应IMAGE_IMPORT_BY_NAME地址（RVA）</p>
+</li>
+<li><p>使用IMAGE_IMPORT_BY_NAME的Hint（ordinal）或Name项，获取相应函数的起始地址&#x3D;&gt;GetProcAddress(&quot;GetCurrentThreadId&quot;)</p>
+</li>
+<li><p>读取IID的FirstThunk（IAT）成员，获得IAT地址</p>
+</li>
+<li><p>将上面获得的函数地址输入相应的IAT数组值</p>
+</li>
+<li><p>重复步骤4～7，直到INT结束（遇到NULL）</p>
+</li>
+</ol>
+</li>
+<li><p>IMAGE_IMPORT_DESCRIPTOR结构体不位于PE头中，它位于PE体中，但查找其位置的信息在PE头中。IMAGE_OPTIONAL_HEADER32.DataDirectory[1].VirtualAddress的值即是IMAGE_IMPORT_DESCRIPTOR结构体数组的起始地址（RVA值）。IMAGE_IMPORT_DESCRIPTOR结构体数组也被称为IMPORT Directory Table</p>
+</li>
+<li><p>从上面展示IMAGE_OPTIONAL_HEADER32结构体的数据里面可以得知IMAGE_IMPORT_DESCRIPTOR数组的起始地址为&quot;0002647C&quot;（RVA）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130094432647.png" alt="image-20211130094432647"></p>
+</li>
+<li><p>因为RVA为&quot;2647C&quot;所以文件偏移为&quot;2367C&quot;（使用RVA To RAW公式计算）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130101448622.png" alt="image-20211130101448622"></p>
+</li>
+<li><p>下面查看IMAGE_IMPORT_DESCRIPTOR结构体数组的第一个元素的各个成员</p>
+<table>
+<thead>
+<tr>
+<th align="center">文件偏移</th>
+<th align="center">成员</th>
+<th align="center">RVA</th>
+<th align="center">RAW</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">2367C</td>
+<td align="center">OriginalFirstThunk(INT)</td>
+<td align="center">00026700</td>
+<td align="center">00023900</td>
+</tr>
+<tr>
+<td align="center">23680</td>
+<td align="center">TimeDateStamp</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">23684</td>
+<td align="center">ForwarderChain</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">23688</td>
+<td align="center">Name</td>
+<td align="center">00027110</td>
+<td align="center">00024310</td>
+</tr>
+<tr>
+<td align="center">2368C</td>
+<td align="center">FirstThunk(IAT)</td>
+<td align="center">00026068</td>
+<td align="center">00023268</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>库名称（Name），根据RVA&quot;27110&quot;转换得到RAW&quot;24310&quot;，查看notepad.exe文件偏移&quot;24310&quot;处，可以看到字符串&quot;KERNEL32.dll&quot;</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130102614648.png" alt="image-20211130102614648"></p>
+</li>
+<li><p>OriginalFirstThunk - INT，INT是一个包含导入函数信息（Ordinal，Name）的结构体指针数组，只有获得了这些信息才能在加载到进程内存的库中准确求得相应的函数的起始地址。跟踪OriginalFirstThunk成员RVA:&quot;26700&quot;&#x3D;&gt;RAW:&quot;23900&quot;，INT以地址数组组成（以NULL结束）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130134400940.png" alt="image-20211130134400940"></p>
+</li>
+<li><p>IMAGE_IMPORT_BY_NAME，跟踪数组的第一个值&quot;00026D3C&quot;（RVA）&#x3D;&gt;&quot;00023F3C&quot;（RAW），其中文件偏移&quot;00023F3C&quot;处最初两个字节&quot;02B0&quot;为Ordinal，是库中函数的固有编号。Ordinal的后面可以看到导入的API函数名称字符串&quot;GetProcAddress&quot;（同C语言一样以&#39;\0&#39;结束）</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130134720401.png" alt="image-20211130134720401"></p>
+</li>
+<li><p>FirstThunk - IAT（Import Address Table），IAT的RVA为&quot;26068&quot;则RAW为&quot;23268&quot;，于INT类似IAT数组以&quot;NULL&quot;结尾，IAT第一个元素值为&quot;00026D3C&quot;，与INT的值一样，但有很多情况两者不一样，该值无实际意义，notepad.exe加载到内存时，准确的地址会取代该值</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130135523901.png" alt="image-20211130135523901"></p>
+</li>
+<li><p>下面使用Ollydbg查看notepad.exe的IAT，如下图，可以看到EP的地址为&quot;00771860&quot;，说明这里实际运行时，ImageBase并不是文件中的默认值&quot;00400000&quot;，这里可以反推处实际ImageBase为&quot;00750000&quot;（VA:&quot;771860&quot;- RVA:&quot;21860&quot;&#x3D;ImageBase:&quot;750000&quot;），因此IAT在内存的地址为&quot;00776068&quot;，从下图左下角的数据窗口中可以得到验证，里面&quot;7634F550&quot;即为kernel32.GetProcAddress函数的实际地址</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130140535517.png" alt="image-20211130140535517"></p>
+</li>
+</ul>
+<h5 id="EAT"><a href="#EAT" class="headerlink" title="EAT"></a>EAT</h5><ul>
+<li><p>Windows中&quot;库&quot;是为了方便其他程序调用而集中包含相关函数的文件（DLL&#x2F;SYS）。WIN32 API是最具代表性的库，其中的kernel32.dll文件被称为最核心的库文件。</p>
+</li>
+<li><p>EAT是一种核心机制，它使不同的应用程序可以调用库文件中提供的函数。也就是说，只有通过EAT才能准确求得从相应库中导出函数的起始地址。与前面讲解的IAT一样，PE文件内的特定结构体（IMAGE_EXPORT_DIRECTORY）保存着导出信息，且PE文件中仅有一个结构体用来说明EAT的IMAGE_EXPORT_DIRECTORY结构体</p>
+</li>
+<li><p>下图为kernel32.dll文件的IMAGE_OPTIONAL_HEADER32.DataDirectory[0]（第一个4字节为RVA，第二个4字节为Size成员变量），由于RVA值为&quot;00092D30&quot;故RAW为&quot;00078D30&quot;</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130142823529.png" alt="image-20211130142823529"></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">		RVA		RAW</span><br><span class="line">.text 	10000 	1000</span><br><span class="line">.rdata	80000	66000</span><br><span class="line">.data 	B0000	91000</span><br><span class="line">.didat	C0000	92000</span><br><span class="line">.rsrc	D0000	93000</span><br><span class="line">.reloc	E0000	94000</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>IMAGE_EXPORT_DIRECTORY：IMAGE_EXPORT_DIRECTORY结构体定义代码如下</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_EXPORT_DIRECTORY</span> &#123;</span><br><span class="line">     DWORD   Characteristics;		<span class="comment">// creation time date stamp</span></span><br><span class="line">     DWORD   TimeDateStamp;</span><br><span class="line">     WORD    MajorVersion;</span><br><span class="line">     WORD    MinorVersion;</span><br><span class="line">     DWORD   Name;					<span class="comment">// address of library file name</span></span><br><span class="line">     DWORD   Base;					<span class="comment">// ordinal base</span></span><br><span class="line">     DWORD   NumberOfFunctions;		<span class="comment">// number of funcitons</span></span><br><span class="line">     DWORD   NumberOfNames;			<span class="comment">// number of names</span></span><br><span class="line">     DWORD   AddressOfFunctions;     <span class="comment">// address of function start address array</span></span><br><span class="line">     DWORD   AddressOfNames;         <span class="comment">// address of function name string array</span></span><br><span class="line">     DWORD   AddressOfNameOrdinals;  <span class="comment">// address of ordinal array</span></span><br><span class="line"> &#125;IMAGE_EXPORT_DIRECTORY, *PIMAGE_EXPORT_DIRECTORY;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>IMAGE_EXPORT_DIRECTORY结构体重要成员如下表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">项 目</th>
+<th align="center">含 义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">NumberOfFunctions</td>
+<td align="center">实际Export函数的个数</td>
+</tr>
+<tr>
+<td align="center">NumberOfNames</td>
+<td align="center">Export函数中具名的函数个数</td>
+</tr>
+<tr>
+<td align="center">AddressOfFunctions</td>
+<td align="center">Export函数地址数组（数组元素个数&#x3D;NumberOfFunctions）</td>
+</tr>
+<tr>
+<td align="center">AddressOfNames</td>
+<td align="center">函数名称地址数组（数组元素个数&#x3D;NumberOfNames）</td>
+</tr>
+<tr>
+<td align="center">AddressOfNameOrdinals</td>
+<td align="center">Ordinal地址数组（数组元素个数&#x3D;NumberOfNames）</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>下图描述的是kernel32.dll文件的IMAGE_EXPORT_DIRECTORY结构体与整个EAT结构</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130172628462.png" alt="image-20211130172628462"></p>
+</li>
+<li><p>用HexEditor进入kernel32.dll的&quot;00078D30&quot;偏移处，如下图所示</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130164239802.png" alt="image-20211130164239802"></p>
+</li>
+<li><p>图中高亮部分为IMAGE_EXPORT_DIRECTORY结构体区域，该IMAGE_EXPORT_DIRECTORY的成员如下表所示</p>
+<table>
+<thead>
+<tr>
+<th align="center">文件偏移</th>
+<th align="center">成 员</th>
+<th align="center">值</th>
+<th align="center">RAW</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">78D30</td>
+<td align="center">Characteristics</td>
+<td align="center">00000000</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D34</td>
+<td align="center">TimeDateStamp</td>
+<td align="center">56B90D14</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D36</td>
+<td align="center">MajorVersion</td>
+<td align="center">0000</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D38</td>
+<td align="center">MinorVersion</td>
+<td align="center">0000</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D3C</td>
+<td align="center">Name</td>
+<td align="center">00096C1E</td>
+<td align="center">7CC1E</td>
+</tr>
+<tr>
+<td align="center">78D40</td>
+<td align="center">Base</td>
+<td align="center">00000001</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D44</td>
+<td align="center">NumberOfFunctions</td>
+<td align="center">00000647</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D48</td>
+<td align="center">NumberOfNames</td>
+<td align="center">00000647</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">78D4C</td>
+<td align="center">AddressOfFunctions</td>
+<td align="center">00092D58</td>
+<td align="center">78D58</td>
+</tr>
+<tr>
+<td align="center">78D50</td>
+<td align="center">AddressOfNames</td>
+<td align="center">00094674</td>
+<td align="center">7A674</td>
+</tr>
+<tr>
+<td align="center">78D54</td>
+<td align="center">AddressOfNameOrdinals</td>
+<td align="center">00095F90</td>
+<td align="center">7BF90</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>函数名称数组：AddressOfNames成员的值为RVA:00094674，即RAW:7A674。用HexEditor查看该地址，如下图所示。此处为4字节RVA组成的数组，数组元素个数为NameberOfNames（0x647），逐一跟随所有RVA值即可发现函数名称的字符串</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130184544649.png" alt="image-20211130184544649"></p>
+</li>
+<li><p>由第一个RVA&quot;96C8A&quot;&#x3D;&gt;&quot;7CC8A&quot;，查看该处地址可以看到函数名称为&quot;AcquireSRWLockExclusive&quot;</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130185039095.png" alt="image-20211130185039095"></p>
+</li>
+<li><p>接下来查找&quot;AcquireSRWLockExclusive&quot;函数的Ordinal值，AddressOfNameOrdinals成员的值为RVA:00095F90&#x3D;&gt;RAW:7BF90，如下图可以看到高亮部分为多个2字节的ordinal组成的数组(ordinal数组中的各元素大小为2个字节)，从图可以知道对应的ordinal&#x3D;3</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130185745351.png" alt="image-20211130185745351"></p>
+</li>
+<li><p>函数地址数组 - EAT，最后查找&quot;AcquireSRWLockExclusive&quot;的实际地址，AddressOfFunctions成员的值为RVA:92D58&#x3D;&gt;RAW:78D58，将上面得到的ordinal&#x3D;3用作下图数组的索引，得到RVA:96CA2</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B07/image-20211130191850713.png" alt="image-20211130191850713"></p>
+</li>
+<li><p>kernel32.dll ImageBase为&quot;6B800000&quot;，所以AcquireSRWLockExclusive地址为&quot;6B896CA2&quot;，这里因为暂时没找到ollydbg调试kernel32.dll的方法，因此无法用ollydbg验证</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B06/" rel="prev" title="《逆向工程核心原理》学习笔记6">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记6
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/" rel="next" title="《逆向工程核心原理》学习笔记8">
+      《逆向工程核心原理》学习笔记8 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%8D%81%E4%B8%89%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第十三章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#PE%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.1.</span> <span class="nav-text">PE文件格式</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.1.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#PE%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F-1"><span class="nav-number">1.1.2.</span> <span class="nav-text">PE文件格式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#VA%E4%B8%8ERVA"><span class="nav-number">1.1.3.</span> <span class="nav-text">VA与RVA</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#PE%E5%A4%B4"><span class="nav-number">1.1.4.</span> <span class="nav-text">PE头</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#DOS%E5%AD%98%E6%A0%B9"><span class="nav-number">1.1.5.</span> <span class="nav-text">DOS存根</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#NT%E5%A4%B4"><span class="nav-number">1.1.6.</span> <span class="nav-text">NT头</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#RVA-to-RAW"><span class="nav-number">1.1.7.</span> <span class="nav-text">RVA to RAW</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#IAT"><span class="nav-number">1.1.8.</span> <span class="nav-text">IAT</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#EAT"><span class="nav-number">1.1.9.</span> <span class="nav-text">EAT</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '90a4a05cb18d36b10bda1ef7bab5e986',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

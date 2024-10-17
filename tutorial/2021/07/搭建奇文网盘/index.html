@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="奇文网盘官网项目地址: 后端源码: https:&#x2F;&#x2F;gitee.com&#x2F;qiwen-cloud&#x2F;qiwen-file   前端源码: https:&#x2F;&#x2F;gitee.com&#x2F;qiwen-cloud&#x2F;qiwen-file-web  官方部署教程: https:&#x2F;&#x2F;www.qiwenshare.com&#x2F;essay&#x2F;detail&#x2F;169  官方教程不是很详细，实际搭建过程中发现有不少坑要踩，所以有了本文">
+<meta property="og:type" content="article">
+<meta property="og:title" content="搭建奇文网盘">
+<meta property="og:url" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="奇文网盘官网项目地址: 后端源码: https:&#x2F;&#x2F;gitee.com&#x2F;qiwen-cloud&#x2F;qiwen-file   前端源码: https:&#x2F;&#x2F;gitee.com&#x2F;qiwen-cloud&#x2F;qiwen-file-web  官方部署教程: https:&#x2F;&#x2F;www.qiwenshare.com&#x2F;essay&#x2F;detail&#x2F;169  官方教程不是很详细，实际搭建过程中发现有不少坑要踩，所以有了本文">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111415582.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104349853.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104555673.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104830244.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716105359.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716110048.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716110615353.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111828276.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717095004070.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100000335.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100303482.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100440345.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100939284.png">
+<meta property="article:published_time" content="2021-07-16T02:28:00.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:21.252Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="教程">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111415582.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>搭建奇文网盘 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          搭建奇文网盘
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-07-16 10:28:00" itemprop="dateCreated datePublished" datetime="2021-07-16T10:28:00+08:00">2021-07-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:21" itemprop="dateModified" datetime="2024-10-16T13:19:21+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="奇文网盘官网项目地址"><a href="#奇文网盘官网项目地址" class="headerlink" title="奇文网盘官网项目地址:"></a>奇文网盘官网项目地址:</h3><ul>
+<li><p>后端源码: <a target="_blank" rel="noopener" href="https://gitee.com/qiwen-cloud/qiwen-file">https://gitee.com/qiwen-cloud/qiwen-file</a> </p>
+</li>
+<li><p>前端源码: <a target="_blank" rel="noopener" href="https://gitee.com/qiwen-cloud/qiwen-file">https://gitee.com/qiwen-cloud/qiwen-file-web</a></p>
+</li>
+<li><p>官方部署教程: <a target="_blank" rel="noopener" href="https://www.qiwenshare.com/essay/detail/169">https://www.qiwenshare.com/essay/detail/169</a></p>
+<blockquote>
+<p>官方教程不是很详细，实际搭建过程中发现有不少坑要踩，所以有了本文</p>
+</blockquote>
+</li>
+</ul>
+<span id="more"></span>
+
+<h3 id="准备阶段"><a href="#准备阶段" class="headerlink" title="准备阶段"></a>准备阶段</h3><ul>
+<li><p>一台运行内存至少1G的机器（一开始在512M机器上搭建，一直启动失败，排错很久才发现是内存不够，刚好1G的机器，内存也吃紧，需要有swap分区，这里搭建环境是1G 内存+1G swap交换空间）</p>
+</li>
+<li><p>下载奇文网盘项目的release里的源码，直接clone下来的代码缺一些文件</p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://gitee.com/qiwen-cloud/qiwen-file/releases/">后端release源码</a></p>
+<p><a target="_blank" rel="noopener" href="https://gitee.com/qiwen-cloud/qiwen-file-web/releases/">前端release源码</a></p>
+</blockquote>
+</li>
+<li><p>编译环境</p>
+<ul>
+<li><p>JDK （这里为JDK8）</p>
+</li>
+<li><p>maven环境 （这里为3.8.1）</p>
+</li>
+<li><p>idea （非必须）</p>
+</li>
+<li><p>nodejs （这里14.17.0）</p>
+</li>
+</ul>
+</li>
+<li><p>官方教程中提到的环境</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111415582.png" alt="image-20210716111415582"></p>
+</li>
+</ul>
+<h3 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h3><h4 id="编译后端"><a href="#编译后端" class="headerlink" title="编译后端"></a>编译后端</h4><ul>
+<li><p>用idea打开后端项目qiwen-file，可以看到项目结构如下，如果是git clone下来的代码，则没有file-common这个文件夹，也就无法按他官方的方法编译出release文件夹，所以需要下载release的源码包</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104349853.png" alt="image-20210716104349853"></p>
+</li>
+<li><p>打开file-web&#x2F;src&#x2F;main&#x2F;resources&#x2F;config，可以看到有3个SpringBoot的配置文件，从上到下，第一个为公共配置内容，第二个为开发环境配置内容，第三个即为生产环境配置内容</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104555673.png" alt="image-20210716104555673"></p>
+</li>
+<li><p>修改application.properties，加入一行server.address&#x3D;localhost，之所以加这个是，如果不加这个，则SpringBoot的默认tomcat配置会监听0.0.0.0即所有ip的请求，因为后面用的是nginx进行转发，所以没有必要暴露接口到公网；修改spring.profiles.active值为prod即选择生产环境；端口看需求，自行选择是否更改，这里维持默认值。</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716104830244.png" alt="image-20210716104830244"></p>
+</li>
+<li><p>打开application-prod.properties，修改里面的mysql连接信息，修改里面的mysql服务的ip，端口，用户名和密码，这里默认连接的是file数据库，可以修改为其他，但这里保持默认即可</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716105359.png" alt="image-20210716105359.png"></p>
+</li>
+<li><p>上面properties配置修改完后，打开file-common&#x2F;src&#x2F;main&#x2F;resource&#x2F;conf&#x2F;settings.xml，修改localRepository的值为你的maven本地仓库路径，这步很重要</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716110048.png" alt="image-20210716110048.png"></p>
+</li>
+<li><p>编译生成release文件夹，打开终端在项目根路径下运行以下命令</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean install -s file-common/src/main/resources/conf/settings.xml</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>等待编译完成，不出意外即可看到生成了release文件夹，目录结构如下</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716110615353.png" alt="image-20210716110615353"></p>
+</li>
+<li><p>至此后端编译完成</p>
+</li>
+</ul>
+<h4 id="前端编译"><a href="#前端编译" class="headerlink" title="前端编译"></a>前端编译</h4><ul>
+<li><p>前端编译比较简单，在前端项目qiwen-file-web根路径运行以下命令，运行时如果提示需要&quot;npm audit fix&quot;，则按提示运行一遍<code>npm audit fix</code>即可</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">npm install</span><br><span class="line"></span><br><span class="line">npm run build</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编译完成后会生成一个dist文件夹</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210716111828276.png" alt="image-20210716111828276"></p>
+</li>
+</ul>
+<h3 id="服务器部署-以ubuntu-20-04为例"><a href="#服务器部署-以ubuntu-20-04为例" class="headerlink" title="服务器部署(以ubuntu 20.04为例)"></a>服务器部署(以ubuntu 20.04为例)</h3><ul>
+<li><p>安装一些常用命令</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update &amp;&amp; sudo apt install git nginx curl wget unzip net-tools vim -y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用nginx开机自启动</span></span><br><span class="line">sudo systemctl <span class="built_in">enable</span> nginx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装docker（非必须，这里使用docker，可以直接用docker拉取mysql和redis环境，省去配置的时间，mysql和redis都可以用apt安装配置）</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -sSL https://get.daocloud.io/docker | sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>docker 拉取mysql镜像并启动</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里密码需要根application-prod.properties里面的一致，127.0.0.1:3306:3306将本地3306转发至容器</span></span><br><span class="line"><span class="comment"># 不加127.0.0.1则外网也可访问数据库，不安全</span></span><br><span class="line">docker run -itd  --restart unless-stopped --name mysql -p 127.0.0.1:3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>docker拉取redis镜像并启动</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 同样只监听本地127.0.0.1即可，这里不设置密码，如果需要设置密码，则application.properties里相应的地方需要修改</span></span><br><span class="line">docker run --restart unless-stopped -p 127.0.0.1:6379:6379 --name redis -d redis redis-server --appendonly <span class="built_in">yes</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装mysql-client，连接mysql数据库，创建一个file数据库</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install mysql-client -y</span><br><span class="line"></span><br><span class="line">mysql -h 127.0.0.1 -u root -p</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>mysql命令界面创建数据库，注意如果在application-prod.properties里面修改了默认连接的数据库的名称，则这里也要将file修改为相应的数据库名，否则如果数据库不存在，则启动会报错</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create database file default character set utf8mb4 collate utf8mb4_general_ci;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建好file数据库就可以退出mysql连接了</p>
+</li>
+<li><p>配置nginx，在&#x2F;etc&#x2F;nginx&#x2F;conf.d&#x2F;目录下新建一个.conf扩展名的文件，名字随意</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/nginx/conf.d/pan.conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>加入以下内容，注意修改域名&quot;pan.iz4.cc&quot;为你的域名</p>
+  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">server</span><br><span class="line">&#123;</span><br><span class="line">        listen 80<span class="comment">;</span></span><br><span class="line">        server_name pan.iz4.cc<span class="comment">;</span></span><br><span class="line">        index index.html index.htm index.php default.php default.htm default.html<span class="comment">;</span></span><br><span class="line">        root /www/web<span class="comment">;</span></span><br><span class="line">                </span><br><span class="line">        location /api/&#123;</span><br><span class="line">                proxy_set_header Host $http_host<span class="comment">;</span></span><br><span class="line">                proxy_set_header X-Real-IP $remote_addr<span class="comment">;</span></span><br><span class="line">                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for<span class="comment">;</span></span><br><span class="line">                proxy_set_header X-Forwarded-Proto $scheme<span class="comment">;</span></span><br><span class="line">                proxy_pass      http://localhost:8080/<span class="comment">;</span></span><br><span class="line">        &#125;</span><br><span class="line">                </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>保存后重启nginx，使之生效</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service nginx restart</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装jdk</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install openjdk-8-jdk -y</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>配置环境变量JAVA_HOME和CLASSPATH</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.bashrc</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后面加入以下内容</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 <span class="comment"># 替换为你的jdk安装目录</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$JAVA_HOME</span>/bin:<span class="variable">$PATH</span></span><br><span class="line"><span class="built_in">export</span> CLASSPATH=.:<span class="variable">$JAVA_HOME</span>/lib/dt.jar:<span class="variable">$JAVA_HOME</span>/lib/tools.jar</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>保存并运行<code>source ~/.bashrc</code>使之生效</p>
+</li>
+<li><p>将后端编译生成的release和dist文件夹打包上传至服务器</p>
+</li>
+<li><p>将dist文件夹的内容拷贝到&#x2F;www&#x2F;web目录下（这里需要跟上面nginx配置里的root &#x2F;www&#x2F;web路径保持一致）前端部署完后，浏览器访问服务器域名会出现以下界面，但因为后端还没部署，api接口不生效，所以点击注册&#x2F;登录会没有反应，开发者工具里面可以看到有xhr请求失败，接下来启动后端让前后端联动</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717095004070.png" alt="image-20210717095004070"></p>
+</li>
+<li><p>因为奇文网盘上传文件默认保存路径为release&#x2F;static&#x2F;，因此需要release文件夹拷至服务器需要存放数据的硬盘的目录下，否则可能会占用系统硬盘空间，如果服务器只有一块硬盘则任意目录都可</p>
+</li>
+<li><p>运行release&#x2F;bin&#x2F;start.sh</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash start.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动后，等待启动完成，运行以下命令，查看是否出现tcp 8080端口，若出现则后端正常启动了，如果没有，首先检查机器的内存是否足够，然后再检查配置是否有误</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -tnl </span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100000335.png" alt="image-20210717100000335"></p>
+</li>
+<li><p>关闭服务</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash stop.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>后端启动完成后，浏览器访问服务器域名或IP，可以发现首页内容更丰富了，而且可以点击注册会登录可以正常跳转页面，说明前后端都部署正常</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100303482.png" alt="image-20210717100303482"></p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100440345.png" alt="image-20210717100440345"></p>
+</li>
+<li><p>如果后续需要修改properties配置，可以修改release&#x2F;conf&#x2F;config目录下的properties文件，而不用重新编译</p>
+</li>
+<li><p>实际使用中，上传文件可能还回出现以下保错 &quot;413 Request Entity Too Large&quot;，这是nginx里面没有配置最大上传文件大小导致的，解决方法，编辑&#x2F;etc&#x2F;nginx&#x2F;nginx.conf文件<code>vi /etc/nginx/nginx.conf</code>，找到http部分，在&quot;{}&quot;里面加入以下两句</p>
+<p>  <img src="/tutorial/2021/07/%E6%90%AD%E5%BB%BA%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98/image-20210717100939284.png" alt="image-20210717100939284"></p>
+  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 根据需求自行修改大小</span></span><br><span class="line"><span class="comment"># 上传文件最大大小</span></span><br><span class="line">client_max_body_size 10240M<span class="comment">;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># nginx分配给请求数据的Buffer大小，如果请求的数据小于client_body_buffer_size直接将数据先在内存中存储。如果请求的值大于client_body_buffer_size小于client_max_body_size，就会将数据先存储到临时文件中</span></span><br><span class="line">client_body_buffer_size 8M<span class="comment">;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改完，运行<code>sudo service nginx restart</code>，重启nginx使之生效</p>
+</li>
+<li><p>奇文网盘里面也有设置最大上传文件大小的地方，默认为2048M，跟nginx的上传设置是互相独立的，如果在nginx里设置最大文件为10G，奇文网盘配置文件里设置为2G那么，最大上传还是只有2G，所以要两边同时修改</p>
+</li>
+<li><p>修改release&#x2F;conf&#x2F;config&#x2F;application.properties，<code>vi release/conf/config/application.properties </code>，找到以下三个配置，将大小修改为你所需的大小即可</p>
+  <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring.servlet.multipart.max-file-size</span>=<span class="number">10240</span>MB</span><br><span class="line"><span class="attr">spring.servlet.multipart.max-request-size</span>=<span class="number">10240</span>MB</span><br><span class="line"><span class="attr">spring.servlet.multipart.enabled</span>=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改完运行release&#x2F;bin&#x2F;restart.sh，重启即可<code>bash release/bin/restart.sh</code></p>
+</li>
+<li><p>这样就可以上传大文件了</p>
+</li>
+<li><p>至此成功在服务器上搭建了奇文网盘</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%99%E7%A8%8B/" rel="tag"># 教程</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/article/2021/07/SpringBoot%E4%B8%AD%E4%BD%BF%E7%94%A8Swagger/" rel="prev" title="SpringBoot中使用Swagger">
+      <i class="fa fa-chevron-left"></i> SpringBoot中使用Swagger
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/" rel="next" title="解决selenium使用location定位与截图中的坐标偏差问题">
+      解决selenium使用location定位与截图中的坐标偏差问题 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A5%87%E6%96%87%E7%BD%91%E7%9B%98%E5%AE%98%E7%BD%91%E9%A1%B9%E7%9B%AE%E5%9C%B0%E5%9D%80"><span class="nav-number">1.</span> <span class="nav-text">奇文网盘官网项目地址:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5"><span class="nav-number">2.</span> <span class="nav-text">准备阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">3.</span> <span class="nav-text">开始</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%90%8E%E7%AB%AF"><span class="nav-number">3.1.</span> <span class="nav-text">编译后端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF%E7%BC%96%E8%AF%91"><span class="nav-number">3.2.</span> <span class="nav-text">前端编译</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%83%A8%E7%BD%B2-%E4%BB%A5ubuntu-20-04%E4%B8%BA%E4%BE%8B"><span class="nav-number">4.</span> <span class="nav-text">服务器部署(以ubuntu 20.04为例)</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '654eba70d668a64cd58b36f426ab72ef',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

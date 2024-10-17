@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="逆向工程核心原理第三章准备阶段 软件：Ollydbg，visual studio community  使用visual studio创建一个名为LittleEndian的c++控制台项目，粘入以下代码，然后运行生成x86(Win32)的LittleEndian.exe文件   1234567891011121314#include &quot;windows.h&quot;BYTE b &#x3D; 0x">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记2">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="逆向工程核心原理第三章准备阶段 软件：Ollydbg，visual studio community  使用visual studio创建一个名为LittleEndian的c++控制台项目，粘入以下代码，然后运行生成x86(Win32)的LittleEndian.exe文件   1234567891011121314#include &quot;windows.h&quot;BYTE b &#x3D; 0x">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122092145991.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122092505200.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122093227707.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/2.52.41.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/2.57.13.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.02.20.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.03.24.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.08.03.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.10.55.png">
+<meta property="article:published_time" content="2021-11-22T00:55:51.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:15.132Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122092145991.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记2 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记2
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-22 08:55:51" itemprop="dateCreated datePublished" datetime="2021-11-22T08:55:51+08:00">2021-11-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:15" itemprop="dateModified" datetime="2024-10-16T13:19:15+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="逆向工程核心原理第三章"><a href="#逆向工程核心原理第三章" class="headerlink" title="逆向工程核心原理第三章"></a>逆向工程核心原理第三章</h3><h5 id="准备阶段"><a href="#准备阶段" class="headerlink" title="准备阶段"></a>准备阶段</h5><ul>
+<li><p>软件：Ollydbg，<a target="_blank" rel="noopener" href="https://visualstudio.microsoft.com/zh-hans/downloads/">visual studio community</a></p>
+</li>
+<li><p>使用visual studio创建一个名为LittleEndian的c++控制台项目，粘入以下代码，然后运行生成x86(Win32)的LittleEndian.exe文件</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;windows.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">BYTE b = <span class="number">0x12</span>;</span><br><span class="line">WORD w = <span class="number">0x1234</span>;</span><br><span class="line">DWORD dw = <span class="number">0x12345678</span>;</span><br><span class="line"><span class="type">char</span> str[] = <span class="string">&quot;abcde&quot;</span>;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    byte lb = b;</span><br><span class="line">    WORD lw = w;</span><br><span class="line">    DWORD ldw = dw;</span><br><span class="line">    <span class="type">char</span>* lstr = str;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<span id="more"></span>
+
+<h5 id="字节序"><a href="#字节序" class="headerlink" title="字节序"></a>字节序</h5><ul>
+<li><p>字节序指<strong>多字节</strong>数据在计算机内存中存放的字节顺序，字节序主要分为大端序和小端序。大端序：数据的高位储存在低位内存地址（高位在前，低位在后这种符合我们人类的书写习惯，例如书写时：个位在后，十位在前）；小端序：数据的低位储存在高位内存地址（低位在前，高位在后，这种更符合计算机读取内存的方式，因为CPU读取内存中的数据时，是从低地址向高地址方向进行读取的，而运算也是从低位开始的）</p>
+</li>
+<li><p>用以下例子来展示同一数据用大端序和小端序储存时有何不同</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">BYTE b = <span class="number">0x12</span>;</span><br><span class="line">WORD w = <span class="number">0x1234</span>;</span><br><span class="line">DWORD dw = <span class="number">0x12345678</span>;</span><br><span class="line"><span class="type">char</span> str[] = <span class="string">&quot;abcde&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="center">Type</th>
+<th align="center">Name</th>
+<th align="center">Size</th>
+<th align="center">大端序类型</th>
+<th align="center">小端序类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">BYTE</td>
+<td align="center">b</td>
+<td align="center">1</td>
+<td align="center">[12]</td>
+<td align="center">[12]</td>
+</tr>
+<tr>
+<td align="center">WORD</td>
+<td align="center">w</td>
+<td align="center">2</td>
+<td align="center">[12][34]</td>
+<td align="center">[34][12]</td>
+</tr>
+<tr>
+<td align="center">DWORD</td>
+<td align="center">dw</td>
+<td align="center">4</td>
+<td align="center">[12][34][56][78]</td>
+<td align="center">[78][56][34][12]</td>
+</tr>
+<tr>
+<td align="center">char[]</td>
+<td align="center">str</td>
+<td align="center">6</td>
+<td align="center">[61][62][63][64][65][00]</td>
+<td align="center">[61][62][63][64][65][00]</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h5 id="用OD查看小端序"><a href="#用OD查看小端序" class="headerlink" title="用OD查看小端序"></a>用OD查看小端序</h5><ul>
+<li><p>Ollydbg打开我们的LittleEndian.exe文件，如图先用搜索字符串的方式定位到我们的main函数所在位置，在函数开始位置&quot;00641750&quot;设下断点</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122092145991.png" alt="image-20211122092145991"></p>
+</li>
+<li><p>运行调试，然后F8逐步运行至&quot;00641775&quot;位置，可以看到左下方位于代码窗口和数据窗口之间出现了&quot;ds:[0064A000]&#x3D;12&quot;，结合我们的代码和&quot;00641775&quot;的汇编指令可知，此时程序正在获取全局变量&quot;b&#x3D;0x12&quot;的值，点击左下角数据窗口，Ctrl + G 输入&quot;0064A000&quot;地址跳转查看&quot;0064A000&quot;的数据，可以看到数据正是我们的0x12</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122092505200.png" alt="image-20211122092505200"></p>
+</li>
+<li><p>找到全局变量b所在位置后，其余全局变量也很容易找到，这里直接可以看出其余变量紧跟在全局变量b之后，从图可以看到WORD和DWORD类型采用的是小端序的方式储存</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/image-20211122093227707.png" alt="image-20211122093227707"></p>
+</li>
+</ul>
+<hr>
+<h3 id="逆向工程核心原理第四章"><a href="#逆向工程核心原理第四章" class="headerlink" title="逆向工程核心原理第四章"></a>逆向工程核心原理第四章</h3><h5 id="IA-32寄存器"><a href="#IA-32寄存器" class="headerlink" title="IA-32寄存器"></a>IA-32寄存器</h5><ul>
+<li>通用寄存器（32位，8个）：EAX、EBX、ECX、EDX、ESI、EDI、EBP、ESP</li>
+<li>段寄存器（16位，6个）：CS、DS、SS、ES、FS、GS</li>
+<li>程序状态与控制寄存器（32位，1个）：EFLAGS</li>
+<li>指令指针寄存器（32位，1个）：EIP</li>
+</ul>
+<blockquote>
+<p>E（Extended）开头的寄存器代表，该寄存器在16位CPU（IA-16）时就已经存在</p>
+</blockquote>
+<h5 id="通用寄存器"><a href="#通用寄存器" class="headerlink" title="通用寄存器"></a>通用寄存器</h5><ul>
+<li>EAX、EBX、ECX、EDX、ESI、EDI、EBP、ESP，这8个寄存器均有对应的16位寄存器，其中AX~DX还可细分位高（H）、低（L）两种独立的寄存器。以EAX为例，如果需要用全部4个字节则使用EAX，如果只使用2个字节则AX（EAX低16位），如果使用一个字节可以使用AH（AX高8位）或者AL（AX低8位）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">31&#x3D;&#x3D;&gt;16</th>
+<th align="center">15&#x3D;&#x3D;&gt;8</th>
+<th align="center">7&#x3D;&#x3D;&gt;0</th>
+<th align="center">16-bit</th>
+<th align="center">32-bit</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"></td>
+<td align="center">AH</td>
+<td align="center">AL</td>
+<td align="center">AX</td>
+<td align="center">EAX</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center">BH</td>
+<td align="center">BL</td>
+<td align="center">BX</td>
+<td align="center">EBX</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center">CH</td>
+<td align="center">CL</td>
+<td align="center">CX</td>
+<td align="center">ECX</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center">DH</td>
+<td align="center">DL</td>
+<td align="center">DX</td>
+<td align="center">EDX</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">BP</td>
+<td align="center">EBP</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">SI</td>
+<td align="center">ESI</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">DI</td>
+<td align="center">EDI</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">SP</td>
+<td align="center">ESP</td>
+</tr>
+</tbody></table>
+<ul>
+<li><p>下面用Ollydbg演示EAX、AX、AH、AL使用时的效果，首先可以用Ollydbg任意打开一个exe可执行文件，这里还是用上面的LittleEndian.exe为例</p>
+</li>
+<li><p>按空格快捷键，修改程序下一句运行的汇编指令，这里修改为<code>mov eax, 0x12345678</code>，可以看到修改前，左边的寄存器EAX值为0x00FF5DC0，保存后按F7运行查看结果</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/2.52.41.png" alt="截屏2021-11-22 下午2.52.41"></p>
+</li>
+<li><p>运行后可以看到寄存器EAX结果变为了&quot;0x12345678&quot;，修改EAX值成功</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/2.57.13.png" alt="截屏2021-11-22 下午2.57.13"></p>
+</li>
+<li><p>下面测试AX，同样按空格，修改汇编指令，输入<code>mov ax, 0x8765</code>，保存后按F7运行查看结果</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.02.20.png" alt="截屏2021-11-22 下午3.02.20"></p>
+</li>
+<li><p>运行可以看到寄存器EAX由原来的&quot;0x12345678&quot;变成了&quot;0x12348765&quot;，说明AX寄存器为EAX寄存器的低16位</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.03.24.png" alt="截屏2021-11-22 下午3.03.24"></p>
+</li>
+<li><p>同样地接着来测试AH，空格修改下一句汇编指令为<code>mov ah, 0xFF</code>，保存后按F7运行，可以看到寄存器EAX的值由原来的&quot;0x12348765&quot;变为了&quot;0x1234FF65&quot;，说明AH寄存器为AX寄存器的高8位</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.08.03.png" alt="image-20211122150744281"></p>
+</li>
+<li><p>同样地测试AL，修改汇编指令为<code>mov al, 0x00</code>，保存后按F7运行，可以看到寄存器EAX最后两位由原来的&quot;65&quot;变为了&quot;00&quot;，所以AL寄存器位于AX和EAX的低8位</p>
+<p>  <img src="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B02/3.10.55.png" alt="截屏2021-11-22 下午3.10.55"></p>
+</li>
+</ul>
+<h5 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h5><ul>
+<li>学习和测试了通用寄存器的使用，了解了低位和高位寄存器使用时的具体效果，其他寄存器的使用有待后面继续学习补充</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B01/" rel="prev" title="《逆向工程核心原理》学习笔记1">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记1
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/11/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B03/" rel="next" title="《逆向工程核心原理》学习笔记3">
+      《逆向工程核心原理》学习笔记3 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E4%B8%89%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">逆向工程核心原理第三章</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5"><span class="nav-number">1.0.1.</span> <span class="nav-text">准备阶段</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AD%97%E8%8A%82%E5%BA%8F"><span class="nav-number">1.0.2.</span> <span class="nav-text">字节序</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%94%A8OD%E6%9F%A5%E7%9C%8B%E5%B0%8F%E7%AB%AF%E5%BA%8F"><span class="nav-number">1.0.3.</span> <span class="nav-text">用OD查看小端序</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%9B%9B%E7%AB%A0"><span class="nav-number">2.</span> <span class="nav-text">逆向工程核心原理第四章</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#IA-32%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">2.0.1.</span> <span class="nav-text">IA-32寄存器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">2.0.2.</span> <span class="nav-text">通用寄存器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">2.0.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : 'fca26d5a443b88897744601d321785df',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

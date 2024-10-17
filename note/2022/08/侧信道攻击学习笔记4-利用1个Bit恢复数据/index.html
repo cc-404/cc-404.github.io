@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 本篇将继续跟随chipwhisperer-jupyter sca101的教程来学习从一个Bit的信息来恢复&quot;AES&quot;的密钥，这里的&quot;AES&quot;当然不是标准的AES，但是也挺接近了，为后面能量分析真正的AES提供理论基础">
+<meta property="og:type" content="article">
+<meta property="og:title" content="侧信道攻击学习笔记4-利用1个Bit恢复数据">
+<meta property="og:url" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="简介 本篇将继续跟随chipwhisperer-jupyter sca101的教程来学习从一个Bit的信息来恢复&quot;AES&quot;的密钥，这里的&quot;AES&quot;当然不是标准的AES，但是也挺接近了，为后面能量分析真正的AES提供理论基础">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104253537.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104552900.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104848010.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820110342505.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820110501571.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820110811543.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820111056601.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112007105.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112324740.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112548952.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112959057.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820140859283.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820141619791.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820141834436.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820141943793.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820142345382.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820142548417.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820142841758.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820143458506.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820143653346.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820143819301.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820144556584.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820144715156.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820144830653.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145249765.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145518040.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145740656.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145907896.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820150106933.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151437119.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820150909975.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151505947.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151621619.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151658074.png">
+<meta property="article:published_time" content="2022-08-20T02:37:48.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:19.854Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="侧信道攻击">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104253537.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>侧信道攻击学习笔记4-利用1个Bit恢复数据 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          侧信道攻击学习笔记4-利用1个Bit恢复数据
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-20 10:37:48" itemprop="dateCreated datePublished" datetime="2022-08-20T10:37:48+08:00">2022-08-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:19" itemprop="dateModified" datetime="2024-10-16T13:19:19+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li><p>本篇将继续跟随<a target="_blank" rel="noopener" href="https://github.com/newaetech/chipwhisperer-jupyter">chipwhisperer-jupyter</a> sca101的教程来学习从一个Bit的信息来恢复&quot;AES&quot;的密钥，这里的&quot;AES&quot;当然不是标准的AES，但是也挺接近了，为后面能量分析真正的AES提供理论基础</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104253537.png" alt="image-20220820104253537"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><ul>
+<li><p>首先打开Lab 3_2 - Recovering Data from a Single Bit.ipynb，与前面不同，这个notebook不需要硬件就可以完整运行</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104552900.png" alt="image-20220820104552900"></p>
+</li>
+<li><p>可以到如下提示，大意是说：“你可以把&quot;AES&quot;看成是密钥key和输入数据input异或(XOR)后，再将结果通过S-Box进行字节替换得到输出”。虽然这个&quot;AES&quot;比真正的AES要简单的多，但真正AES的确包含类似的方式，所以通过这个例子来学习确实很适合新手。后面用到的加密模型就是基于下图所提到的XOR + SubBytes</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820104848010.png" alt="image-20220820104848010"></p>
+</li>
+<li><p>接着就是给出了AES的S-Box，然后提示根据sbox补全接下来的函数</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820110342505.png" alt="image-20220820110342505"></p>
+</li>
+<li><p>补全aes_internal函数，根据提示描述可知实现该函数的要点：1. 输入和输出相异或 2.根据异或结果从sbox中查表获得最后输出，总结起来就是<code>sbox[inputdata ^ key]</code></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820110501571.png" alt="image-20220820110501571"></p>
+</li>
+<li><p>紧接着有个简单检验前面的aes_internal函数是否正确实现的代码块，执行后出现&#39;OK to continue!&#39;就说明应该没什么问题</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820110811543.png" alt="image-20220820110811543"></p>
+</li>
+<li><p>接着可以看到如下提示信息和代码，大意就是：“定义一个新的函数aes_secret，不对外暴露key参数，而是内置一个固定的key。后面的攻击就是攻击这个函数，并且假设我们不能直接获得这个预设的固定key是多少但是能获得1个bit的信息”</p>
+</li>
+</ul>
+<p>​	<img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820111056601.png" alt="image-20220820111056601"></p>
+<ul>
+<li><p>紧接着看到如下提示信息和代码块，这段信息目的就是通过这个例子引导我们如何用python生成随机数，并将生成数据通过一个加密函数得到输出</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112007105.png" alt="image-20220820112007105"></p>
+</li>
+<li><p>接着就是根据提示，补全生成随机数据input_data的代码，并且同样有一个简单判断代码实现是否正确</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112324740.png" alt="image-20220820112324740"></p>
+</li>
+<li><p>接着是根据提示信息生成泄漏数据（模拟每个byte泄漏一个bit），&quot;&amp; 0x01&quot;的作用就是取最低位，也就是这里取的是每个byte的第0位，另外可以看到，生成的泄漏数据全为&#39;0&#39;和&#39;1&#39;</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112548952.png" alt="image-20220820112548952"></p>
+</li>
+<li><p>接着有个提示，可以通过画图来直观查看泄漏数据leaked_data的内容，然后有个提问是：“你认为我们将能从这些数据中获取一些有用的东西吗？让我们攻击它来找到答案”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820112959057.png" alt="image-20220820112959057"></p>
+</li>
+<li><p>接着看到如下提示信息，大意是：“让我们攻击之前的模型（知道算法等信息，只是不知道密钥key），然后用所有可能的key获取一系列的数据，再跟上面泄漏的信息做对比，根据有多少相同来判断猜测是否正确。首先，需要补全一个函数，让该函数返回两个lis之间t有多少相同元素的数量”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820140859283.png" alt="image-20220820140859283"></p>
+</li>
+<li><p>如下图，获得两个list相同元素的数量代码可以用numpy array来实现，先转为numpy array，再让两个array用&#39;&#x3D;&#x3D;&#39;比较，最后sum就可以计算得到&#39;True&#39;(1)的数量</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">num_same</span>(<span class="params">a, b</span>):</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(a) != <span class="built_in">len</span>(b):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;Arrays must be same length!&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">max</span>(a) != <span class="built_in">max</span>(b):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;Arrays max() should be the same!&quot;</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Count how many list items match up</span></span><br><span class="line">    _a=np.array(a)</span><br><span class="line">    _b=np.array(b)</span><br><span class="line">    <span class="keyword">return</span> (_a==_b).<span class="built_in">sum</span>()</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820141619791.png" alt="image-20220820141619791"></p>
+</li>
+<li><p>同样地，有个简单判断我们代码是否正确实现地代码块</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820141834436.png" alt="image-20220820141834436"></p>
+</li>
+<li><p>然后可以看到如下提示信息，大意就是：补齐代码，调用aes_internal函数，用key每个可能值[0x00,0x01,...,0xff]加密相同的input_data得到key_guess，再将结果与泄漏数据相比较获得两个list相同的值</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820141943793.png" alt="image-20220820141943793"></p>
+</li>
+<li><p>根据上面提示信息可以补全代码，运行结果如下</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> guess <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">256</span>):   </span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Get a hypothetical leakage list - use aes_internal(guess, input_byte) and mask off to only get value of lowest bit</span></span><br><span class="line">    hypothetical_leakage = [(aes_internal(a,guess) &amp; <span class="number">0x01</span>) <span class="keyword">for</span> a <span class="keyword">in</span> input_data]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Use our function</span></span><br><span class="line">    same_count = num_same(hypothetical_leakage, leaked_data)   </span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Print for debug</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Guess &#123;:02X&#125;: &#123;:4d&#125; bits same&quot;</span>.<span class="built_in">format</span>(guess, same_count))</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820142345382.png" alt="image-20220820142345382"></p>
+</li>
+<li><p>结合上图的输出信息，正如下图的提示信息一样，大部分猜测的&#39;byte&#39;输出相同数目都是500左右，只有&#39;0xEF&#39;是1000（前提是前面的内置key没有设置为其他），所以&#39;0xEF&#39;是固定密钥key的唯一可能值</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820142548417.png" alt="image-20220820142548417"></p>
+</li>
+<li><p>接下来是介绍numpy的argsort，如下图np.argsort()可以从小到大排序一个list（注意这里argsort结果是输出list下标index的排序结果，也就是最小数据所在index到最大数据所在index），要从大到小排序可以在结果加[::-1]或者np.argsort(-np.array(list()))</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820142841758.png" alt="image-20220820142841758"></p>
+</li>
+<li><p>接下来的提示信息就是，利用argsort来补全代码，让代码输出相同数前5的猜测key</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820143458506.png" alt="image-20220820143458506"></p>
+</li>
+<li><p>按照提示可以补全代码，如下图，可以看到，代码成功输出相同数量排在前5的猜测值</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line">guess_list = [<span class="number">0</span>] * <span class="number">256</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> guess <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">256</span>):   </span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Get a hypothetical leakage list - use aes_internal(guess, input_byte) and mask off to only get value of lowest bit</span></span><br><span class="line">    hypothetical_leakage = [(aes_internal(a,guess) &amp; <span class="number">0x01</span>) <span class="keyword">for</span> a <span class="keyword">in</span> input_data]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Use our function</span></span><br><span class="line">    same_count = num_same(hypothetical_leakage, leaked_data)   </span><br><span class="line">    </span><br><span class="line">    <span class="comment">#Track the number of correct bits</span></span><br><span class="line">    guess_list[guess] = same_count</span><br><span class="line"></span><br><span class="line"><span class="comment">#Use np.argsort to generate a list of indicies from low to high, then [::-1] to reverse the list to get high to low.</span></span><br><span class="line">sorted_list = np.argsort(guess_list)[::-<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment">#Print top 5 only</span></span><br><span class="line"><span class="keyword">for</span> guess <span class="keyword">in</span> sorted_list[<span class="number">0</span>:<span class="number">5</span>]:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Key Guess &#123;:02X&#125; = &#123;:04d&#125; matches&quot;</span>.<span class="built_in">format</span>(guess, guess_list[guess]))</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820143653346.png" alt="image-20220820143653346"></p>
+</li>
+<li><p>接下来可以看到如下提示信息，大意是说：“这个例子是我们知道第&#39;0&#39;位就是泄漏数据所在的位，但如果我们不知道泄漏的数据是哪一位信息呢？有个简单的方法解决这个问题就是修改上面的代码让它猜测每个可能byte中8个可能的bit，要做到这点，首先要做的是写一个函数来返回一个byte指定位的值”</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820143819301.png" alt="image-20220820143819301"></p>
+</li>
+<li><p>前面可以知道&quot;&amp; 1&quot;可以获得第0位的值，那么获取指定位值就可以配合移位运算来实现。首先将需要获得的位右移到第0位，再用&quot;&amp; 1&quot;即可。如下图get_bit函数如下，同样有个简单判断代码实现是否正确的代码块</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820144556584.png" alt="image-20220820144556584"></p>
+</li>
+<li><p>然后就是补全aes_leakage_guess代码</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820144715156.png" alt="image-20220820144715156"></p>
+</li>
+<li><p>最后可以看到如下提示信息，大意就是：用上面的aes_leakage_guess函数补全新的循环，获得每个可能byte每个可能的bit与泄漏数据相比相同的数量。而且还提到，将可以看到只有第&#39;0&#39;位的是有&#39;0xEF&#39;&#x3D;1000，其余位都是500左右的其他结果。</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820144830653.png" alt="image-20220820144830653"></p>
+</li>
+<li><p>补全代码如下，结果也确实跟预期一样，只有第0位的才猜测出正确结果</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> bit_guess <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">8</span>):</span><br><span class="line">    guess_list = [<span class="number">0</span>] * <span class="number">256</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Checking bit &#123;:d&#125;&quot;</span>.<span class="built_in">format</span>(bit_guess))</span><br><span class="line">    <span class="keyword">for</span> guess <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">256</span>):</span><br><span class="line"></span><br><span class="line">        <span class="comment">#Get a hypothetical leakage for guessed bit (ensure returns 1/0 only)</span></span><br><span class="line">        <span class="comment">#Use bit_guess as the bit number, guess as the key guess, and data from input_data</span></span><br><span class="line">        hypothetical_leakage = [aes_leakage_guess(a, guess, bit_guess) <span class="keyword">for</span> a <span class="keyword">in</span> input_data]</span><br><span class="line"></span><br><span class="line">        <span class="comment">#Use our function</span></span><br><span class="line">        same_count = num_same(hypothetical_leakage, leaked_data)   </span><br><span class="line"></span><br><span class="line">        <span class="comment">#Track the number of correct bits</span></span><br><span class="line">        guess_list[guess] = same_count</span><br><span class="line"></span><br><span class="line">    sorted_list = np.argsort(guess_list)[::-<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment">#Print top 5 only</span></span><br><span class="line">    <span class="keyword">for</span> guess <span class="keyword">in</span> sorted_list[<span class="number">0</span>:<span class="number">5</span>]:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;Key Guess &#123;:02X&#125; = &#123;:04d&#125; matches&quot;</span>.<span class="built_in">format</span>(guess, guess_list[guess]))</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145249765.png" alt="image-20220820145249765"></p>
+</li>
+<li><p>修改前面的leaked_data的代码，可以按如下图修改，这样泄漏数据就是第&#39;3&#39;位的泄漏数据了</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145518040.png" alt="image-20220820145518040"></p>
+</li>
+<li><p>重新往下运行，可以看到变成第&#39;3&#39;位猜测才有1000 matches了，与预期一致</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145740656.png" alt="image-20220820145740656"></p>
+</li>
+<li><p>接下来，可以看到如下提示信息，大意就是：给泄漏数据的函数加点“料”，修改aes_secret函数，让它根据随机数来决定返回正确加密结果还是0，以此来模拟噪声</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820145907896.png" alt="image-20220820145907896"></p>
+</li>
+<li><p>然后可以看到如下提示信息，大意就是：加料后会发生什么？-会影响猜测的key的准确率，而且事实上，将返回正确加密后的值的概率和需要多少观察数据来恢复正确的key画图，可以得到如下图所示的结果，从图可知70%以上正确率的基本上都只需要少量数据就可以恢复出正确的key。</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820150106933.png" alt="image-20220820150106933"></p>
+</li>
+<li><p>接下来测试下，让aes_secret有70%概率返回正确结果，并且为了避免混淆，将leaked_data重新改为，获取第&#39;0&#39;位的数据</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151437119.png" alt="image-20220820151437119"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820150909975.png" alt="image-20220820150909975"></p>
+</li>
+<li><p>最后结果如下图所示：可以看到，虽然同样可以得到正确的&#39;0xEF&#39;，但是matches值已经变小了很多，但是与其他相比还是有明显的大小区别</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151505947.png" alt="image-20220820151505947"></p>
+</li>
+<li><p>再来看看10%正确返回的结果，可以看到，虽然同样排在第一的是&#39;0xEF&#39;，但是&#39;0xEF&#39;对应的matches数量与排在第2位的0x&#39;E2&#39;差异不大，所以不能只通过一组数据来确定正确密钥是&#39;0xEF&#39;</p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151621619.png" alt="image-20220820151621619"></p>
+<p>  <img src="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B04-%E5%88%A9%E7%94%A81%E4%B8%AABit%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE/image-20220820151658074.png" alt="image-20220820151658074"></p>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>学习了如何利用一位的泄漏数据来恢复&quot;AES&quot;的密钥</li>
+<li>在实际情况中因为存在噪声等因素地干扰，往往需要更多地数据才能正确恢复密钥</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB/" rel="tag"># 侧信道攻击</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/tutorial/2022/08/%E8%A7%A3%E5%86%B3hexo-asset-image%E5%9B%BE%E7%89%87%E7%9B%B8%E5%AF%B9%E8%B7%AF%E5%BE%84%E6%9B%BF%E6%8D%A2%E9%97%AE%E9%A2%98/" rel="prev" title="解决hexo-asset-image图片相对路径替换问题">
+      <i class="fa fa-chevron-left"></i> 解决hexo-asset-image图片相对路径替换问题
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2022/08/%E4%BE%A7%E4%BF%A1%E9%81%93%E6%94%BB%E5%87%BB%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B05-%E5%B7%AE%E5%88%86%E8%83%BD%E9%87%8F%E5%88%86%E6%9E%90%E6%94%BB%E5%87%BB%E5%9B%BA%E4%BB%B6%E4%B8%AD%E7%9A%84AES%E5%AE%9E%E7%8E%B0/" rel="next" title="侧信道攻击学习笔记5-差分能量分析攻击固件中的AES实现">
+      侧信道攻击学习笔记5-差分能量分析攻击固件中的AES实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '4e2bbaa22aa2f309f149c498bb495023',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

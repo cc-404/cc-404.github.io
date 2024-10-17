@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言 我之前的文章解决selenium使用location定位与截图中的坐标偏差问题中提到了，如何利用selenium截取验证码，但是并没有讲该怎么去识别验证码，原因是之前一直没有找到好的方法，一开始尝试过pillow + pytesseract，但是效果很差，显然这种验证码不能用这方法。也尝试过网上的一些在线识别，效果不错，但缺点就是要钱。 再后来在github上发现了这个项目https:&#x2F;&#x2F;g">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Discuz简单验证码识别">
+<meta property="og:url" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="前言 我之前的文章解决selenium使用location定位与截图中的坐标偏差问题中提到了，如何利用selenium截取验证码，但是并没有讲该怎么去识别验证码，原因是之前一直没有找到好的方法，一开始尝试过pillow + pytesseract，但是效果很差，显然这种验证码不能用这方法。也尝试过网上的一些在线识别，效果不错，但缺点就是要钱。 再后来在github上发现了这个项目https:&#x2F;&#x2F;g">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/misc.gif">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img1.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img2.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img3.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img4.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728112118379.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728112328924.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728113839158.png">
+<meta property="og:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728120402589.png">
+<meta property="article:published_time" content="2021-07-27T06:34:30.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:10.834Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="教程">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="验证码">
+<meta property="article:tag" content="selenium">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/misc.gif">
+
+<link rel="canonical" href="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Discuz简单验证码识别 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Discuz简单验证码识别
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-07-27 14:34:30" itemprop="dateCreated datePublished" datetime="2021-07-27T14:34:30+08:00">2021-07-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:10" itemprop="dateModified" datetime="2024-10-16T13:19:10+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tutorial/" itemprop="url" rel="index"><span itemprop="name">tutorial</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
+<li>我之前的文章<a href="https://blog.iz4.cc/tutorial/2021/07/%E8%A7%A3%E5%86%B3selenium%E4%BD%BF%E7%94%A8location%E5%AE%9A%E4%BD%8D%E4%B8%8E%E6%88%AA%E5%9B%BE%E4%B8%AD%E7%9A%84%E5%9D%90%E6%A0%87%E5%81%8F%E5%B7%AE%E9%97%AE%E9%A2%98/">解决selenium使用location定位与截图中的坐标偏差问题</a>中提到了，如何利用selenium截取验证码，但是并没有讲该怎么去识别验证码，原因是之前一直没有找到好的方法，一开始尝试过pillow + pytesseract，但是效果很差，显然这种验证码不能用这方法。也尝试过网上的一些在线识别，效果不错，但缺点就是要钱。</li>
+<li>再后来在github上发现了这个项目<a target="_blank" rel="noopener" href="https://github.com/nickliqian/cnn_captcha">https://github.com/nickliqian/cnn_captcha</a>，然后又在这篇文章中<a target="_blank" rel="noopener" href="https://cuijiahua.com/blog/2018/01/dl_5.html">Tensorflow实战（二）：Discuz验证码识别</a>找到了生成Discuz验证码的php代码，这篇文章也给出了他的深度学习的识别验证码的代码，但我测试时没跑成功，又不懂这方面的知识，排不了错，所以最后选择的是用cnn_captcha这个项目来训练模型，用他给的php代码生成训练用的数据集。最终发现训练的模型效果还不错，一开始用2万张图片训练，虽然训练集准确率达到了100%，但测试集图片准确率一直为0，增加图片数量得到改善，最后调整到用20万张图片训练，测试集字符识别率和图片准确率均达到了99%，实际测试从目标网站爬取下来的图片识别准确率也有80%，这个准确率自用完全OK。</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="准备阶段"><a href="#准备阶段" class="headerlink" title="准备阶段"></a>准备阶段</h2><ul>
+<li><p>最好拥有一台有高性能GPU的电脑，不然训练只靠CPU真跑不动，或者可以使用像谷歌的colab这种云平台来训练模型，训练好后再下载下来使用</p>
+</li>
+<li><p>tensorflow 1.x 环境，试过tensorflow 2.x以兼容1.x方式运行，但是运行还是出了问题，可以用anaconda创建一个tensorflow 1的虚环境，tensorflow1.5下载地址：<a target="_blank" rel="noopener" href="https://pypi.org/project/tensorflow/1.15.0/#files">https://pypi.org/project/tensorflow/1.15.0/#files</a></p>
+</li>
+<li><p>php运行环境（生成验证码数据集需要）</p>
+</li>
+<li><p>如果不想生成验证码或者重复训练模型，这里提供训练用的20万张验证码数据集，以及训练好的模型，模型下载后可以直接使用</p>
+<blockquote>
+<p>链接: <a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1neXmwUjlqGzxBk3QoqRWCg?pwd=2zx4">https://pan.baidu.com/s/1neXmwUjlqGzxBk3QoqRWCg?pwd=2zx4</a>   密码: 2zx4</p>
+<p>注意事项：使用这个模型进行识别需要图片满足width 160，hight 60的png格式，而且要有alpha通道，因为用于训练的图片就是这种。如果你的图片宽高不符合请等比缩放调整至一直，否则会运行出错；如果png图没有alpha通道，请转换下即可，否则将导致识别结果不准确（之前试了同一网站两种不同方式获取验证码图片，识别结果天壤之别，排了很久才发现是识别差的那组是因为图片没有alpha通道，才导致识别结果不准。。）</p>
+</blockquote>
+</li>
+<li><p>这个模型比较适合这种类型的Discuz验证码，动态和静态一样，因为最终用于识别的都只有那一张图</p>
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/misc.gif" alt="misc.gif"></p>
+</li>
+</ul>
+<h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><h4 id="生成验证码数据集"><a href="#生成验证码数据集" class="headerlink" title="生成验证码数据集"></a>生成验证码数据集</h4><ul>
+<li><p>首先生成训练用的数据集，一开始是想的从目标网站爬取验证码，爬下来1000张，自己人工标了几百张，大脑就罢工了。。后来找到这个php代码<a href="discuz.tar.gz">discuz.tar.gz</a>，可以批量生成验证码，还不用自己标注，省去很大麻烦，所以要识别某类验证码，最好看看网上能不能找到相应的验证码库批量生成，实在不行再来考虑爬取标注。</p>
+</li>
+<li><p>下面讲解如何在不会php的情况下，简单跑起这个生成验证码项目，以MacOS+PHPStorm为例</p>
+</li>
+<li><p>首先安装php，打开终端用homebrew安装即可：<code>brew install php</code></p>
+</li>
+<li><p>下载安装PHPStorm，启动后打开discuz.tar.gz解压后的目录</p>
+</li>
+<li><p>选择Preferences &gt; PHP &gt; CLI Interpreter &gt; PHP executable，选择php安装目录，一般homebrew安装的在&#x2F;usr&#x2F;local&#x2F;Cellar目录下可以找到，最后选择OK保存即可</p>
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img1.png" alt="img1.png"></p>
+</li>
+<li><p>选择右上角Add Configuration</p>
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img2.png" alt="img2.png"></p>
+</li>
+<li><p>点击+添加一个PHP Built-in Web Server</p>
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img3.png" alt="img3.png"></p>
+</li>
+<li><p>修改Name，Host，Port，其中Name可以随便起，Host可以设为127.0.0.1或者0.0.0.0等，Port选择你电脑上没有被占用的端口即可，其他保持默认即可，然后保存设置</p>
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/img4.png" alt="img4.png"></p>
+</li>
+<li><p>保存后，可以看到右上角有了绿色三角的运行按钮，点击运行，即可启动这个php项目</p>
+</li>
+<li><p>运行后，就可以用python批量生产验证码了，懂PHP的话其实应该可以修改代码直接PHP生成这些图即可，但奈何不会PHP，下面python代码同样也是改自这篇文章提供的<a target="_blank" rel="noopener" href="https://cuijiahua.com/blog/2018/01/dl_5.html">Tensorflow实战（二）：Discuz验证码识别</a>，这里因为目标网站就是用的Discuz默认的&quot;BCEFGHJKMPQRTVWXY2346789&quot;词库，所以批量生成验证码时也只用这些来生成，减少干扰项，为了方便cnn_captcha识别，文件命名为&quot;验证码_序号&quot;的格式</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#-*- coding:utf-8 -*-</span></span><br><span class="line"><span class="keyword">from</span> urllib.request <span class="keyword">import</span> urlretrieve</span><br><span class="line"><span class="keyword">import</span> time, random, os</span><br><span class="line"> </span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Discuz</span>():</span><br><span class="line">	<span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">		<span class="comment"># Discuz验证码生成图片地址</span></span><br><span class="line">		self.url = <span class="string">&#x27;http://127.0.0.1:8080/index.php?label=&#123;&#125;&amp;width=160&amp;height=60&amp;background=1&amp;adulterate=1&amp;ttf=1&amp;angle=1&amp;scatter=1&amp;color=1&amp;size=1&amp;shadow=1&#x27;</span></span><br><span class="line"> </span><br><span class="line">	<span class="keyword">def</span> <span class="title function_">random_captcha_text</span>(<span class="params">self, captcha_size = <span class="number">4</span></span>):</span><br><span class="line">		<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">		验证码一般都无视大小写；验证码长度4个字符</span></span><br><span class="line"><span class="string">		Parameters:</span></span><br><span class="line"><span class="string">			captcha_size:验证码长度</span></span><br><span class="line"><span class="string">		Returns:</span></span><br><span class="line"><span class="string">			captcha_text:验证码字符串</span></span><br><span class="line"><span class="string">		&quot;&quot;&quot;</span></span><br><span class="line">		<span class="comment"># number = [&#x27;0&#x27;,&#x27;1&#x27;,&#x27;2&#x27;,&#x27;3&#x27;,&#x27;4&#x27;,&#x27;5&#x27;,&#x27;6&#x27;,&#x27;7&#x27;,&#x27;8&#x27;,&#x27;9&#x27;]</span></span><br><span class="line">		<span class="comment"># alphabet = [&#x27;a&#x27;,&#x27;b&#x27;,&#x27;c&#x27;,&#x27;d&#x27;,&#x27;e&#x27;,&#x27;f&#x27;,&#x27;g&#x27;,&#x27;h&#x27;,&#x27;i&#x27;,&#x27;j&#x27;,&#x27;k&#x27;,&#x27;l&#x27;,&#x27;m&#x27;,&#x27;n&#x27;,&#x27;o&#x27;,&#x27;p&#x27;,&#x27;q&#x27;,&#x27;r&#x27;,&#x27;s&#x27;,&#x27;t&#x27;,&#x27;u&#x27;,&#x27;v&#x27;,&#x27;w&#x27;,&#x27;x&#x27;,&#x27;y&#x27;,&#x27;z&#x27;]</span></span><br><span class="line">		<span class="comment"># char_set = number + alphabet</span></span><br><span class="line">		char_set=<span class="string">&quot;BCEFGHJKMPQRTVWXY2346789&quot;</span></span><br><span class="line">		</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>.join(random.sample(char_set, <span class="number">4</span>))</span><br><span class="line"> </span><br><span class="line">	<span class="keyword">def</span> <span class="title function_">download_discuz</span>(<span class="params">self, start=<span class="number">0</span>, end=<span class="number">10000</span></span>):</span><br><span class="line">		<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">		下载验证码图片</span></span><br><span class="line"><span class="string">		Parameters:</span></span><br><span class="line"><span class="string">			nums:下载的验证码图片数量</span></span><br><span class="line"><span class="string">		&quot;&quot;&quot;</span></span><br><span class="line">		dirname = <span class="string">&#x27;./Discuz&#x27;</span></span><br><span class="line">		<span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(dirname):</span><br><span class="line">			os.mkdir(dirname)</span><br><span class="line">		<span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(start, end):</span><br><span class="line">			label = self.random_captcha_text()</span><br><span class="line">			<span class="built_in">print</span>(<span class="string">&#x27;第%d张图片:%s下载&#x27;</span> % (i + <span class="number">1</span>,label))</span><br><span class="line">			urlretrieve(url = self.url.<span class="built_in">format</span>(label), filename = os.path.join(dirname, <span class="string">f&#x27;<span class="subst">&#123;label&#125;</span>_<span class="subst">&#123;i&#125;</span>.png&#x27;</span>))</span><br><span class="line">		<span class="built_in">print</span>(<span class="string">&#x27;恭喜图片下载完成！&#x27;</span>)</span><br><span class="line"> </span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">	dz = Discuz()</span><br><span class="line">	dz.download_discuz(<span class="number">0</span>, <span class="number">50000</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>至此已经生成了用于训练的图片数据集</p>
+</li>
+</ul>
+<h4 id="训练模型"><a href="#训练模型" class="headerlink" title="训练模型"></a>训练模型</h4><ul>
+<li><p>这里以用谷歌的colab为例来训练模型，没办法自己电脑上的显卡太弱，约等于无</p>
+</li>
+<li><p>首先上传打包后的验证码到谷歌云盘上，方便colab上访问</p>
+</li>
+<li><p>新建或者打开一个笔记本，选择左上角的修改 &gt; 笔记本设置，可以选择使用GPU加速</p>
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728112118379.png" alt="image-20210728112118379"></p>
+</li>
+<li><p>挂载谷歌云盘（非必须，如果数据在谷歌云盘上，则可以挂载），打开网页后输入口令即可</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> google.colab <span class="keyword">import</span> drive</span><br><span class="line">drive.mount(<span class="string">&#x27;/content/drive&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看是否挂载成功</span></span><br><span class="line">os.listdir(<span class="string">&#x27;.&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728112328924.png" alt="image-20210728112328924"></p>
+</li>
+<li><p>选择tensorflow_version 1.x运行环境</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%tensorflow_version <span class="number">1.</span>x</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>从github上clone cnn_captcha</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">! git clone https://github.com/nickliqian/cnn_captcha.git</span><br><span class="line">! mkdir cnn_captcha/sample</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>解压图片数据集</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">! tar -zxvf <span class="string">&#x27;/content/drive/MyDrive/Discuz-50000.tar.gz&#x27;</span> &gt; /dev/null</span><br><span class="line">! tar -zxvf <span class="string">&#x27;/content/drive/MyDrive/Discuz-50000-100000.tar.gz&#x27;</span> &gt; /dev/null</span><br><span class="line">! tar -zxvf <span class="string">&#x27;/content/drive/MyDrive/Discuz-100000-200000.tar.gz&#x27;</span> &gt; /dev/null</span><br><span class="line">! mv Discuz cnn_captcha/sample/origin</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改配置文件，如果不是在colab上运行，则可以直接文本编辑器修改json配置文件</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">! cd cnn_captcha/tools &amp;&amp; python3 collect_labels.py</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;cnn_captcha/conf/sample_config.json&#x27;</span>, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">  data=json.load(fp)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改需要的参数，其余参数可保持默认</span></span><br><span class="line"><span class="comment"># 最大训练次数</span></span><br><span class="line">data[<span class="string">&#x27;cycle_stop&#x27;</span>] = <span class="number">60000</span></span><br><span class="line"><span class="comment"># 数据集图片格式</span></span><br><span class="line">data[<span class="string">&#x27;image_suffix&#x27;</span>]=<span class="string">&#x27;png&#x27;</span></span><br><span class="line"><span class="comment"># 图片宽高</span></span><br><span class="line">data[<span class="string">&#x27;image_width&#x27;</span>] = <span class="number">160</span></span><br><span class="line">data[<span class="string">&#x27;image_hight&#x27;</span>] = <span class="number">60</span></span><br><span class="line"><span class="comment"># 生成验证码的所有字符集合，Discuz默认只有这24个</span></span><br><span class="line">data[<span class="string">&#x27;char_set&#x27;</span>]=<span class="string">&#x27;BCEFGHJKMPQRTVWXY2346789&#x27;</span></span><br><span class="line"><span class="comment"># 每次测试集使用的图片数量，内存小的机器可减小这个</span></span><br><span class="line">data[<span class="string">&#x27;test_batch_size&#x27;</span>]=<span class="number">100</span></span><br><span class="line"><span class="comment"># 每次训练集使用的图片数量，内存小的机器可减小这个</span></span><br><span class="line">data[<span class="string">&#x27;train_batch_size&#x27;</span>]=<span class="number">128</span></span><br><span class="line"><span class="comment"># 保存配置</span></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;cnn_captcha/conf/sample_config.json&#x27;</span>, <span class="string">&#x27;w&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">  json.dump(data, fp)</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728113839158.png" alt="image-20210728113839158"></p>
+<ul>
+<li><p>设置工作目录为cnn_captcha，方便后面运行训练主函数</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">os.chdir(<span class="string">&#x27;cnn_captcha&#x27;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>拆分图片为训练集和测试集</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">! python3 verify_and_split_data.py</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>拷贝train_model.py文件内容至colab笔记本输入框，然后运行main函数，这里不直接命令运行是因为，colab中使用命令运行，默认用的还是tensorflow 2，前面设置tensorflow 1就白设置了</p>
+</li>
+<li><p>训练完毕后打包model并保存到谷歌云盘</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">os.chdir(<span class="string">&#x27;/content/&#x27;</span>)</span><br><span class="line"></span><br><span class="line">! tar -zcvf cnn_captcha.tar.gz cnn_captcha &gt; /dev/null <span class="comment"># 可以不打包整个cnn_captcha文件夹，看需求调整</span></span><br><span class="line">! tar -zcvf model.tar.gz cnn_captcha/model &gt; /dev/null <span class="comment"># 这个即为训练好的模型</span></span><br><span class="line">! cp model.tar.gz drive/MyDrive/ <span class="comment"># 拷贝至谷歌云盘</span></span><br><span class="line">! cp cnn_captcha.tar.gz drive/MyDrive/ <span class="comment"># 拷贝至谷歌云盘</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>完整colab的ipynb</p>
+<p>  <a href="Discuz.ipynb">Discuz.ipynb</a></p>
+</li>
+<li><p>实际用colab训练发现速度还是可以的：20万张图，按上面参数训练5万多次后，训练集字符和图片准确率100%，测试集的字符和图片准确率达到了99%，总耗时2小时。</p>
+</li>
+</ul>
+<h4 id="启动识别API-Server"><a href="#启动识别API-Server" class="headerlink" title="启动识别API Server"></a>启动识别API Server</h4><ul>
+<li><p>本地git clone cnn_captcha</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/nickliqian/cnn_captcha.git</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>下载训练好的模型，解压至cnn_captcha目录下</p>
+</li>
+<li><p>修改配置文件conf&#x2F;sample_config.json里面的图片格式和大小为模型使用的大小，其他可以保持默认</p>
+</li>
+<li><p>创建API存放图片文件夹，这个文件夹可以在sample_config.json中修改，启动识别API server前需要有这个错误，否则识别时，报找不到文件错误</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p sample/api</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动server，这里运行环境也是需要tensorflow1.x，但是可以不需要GPU</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python3 webserver_recognize_api.py</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="测试识别"><a href="#测试识别" class="headerlink" title="测试识别"></a>测试识别</h4><ul>
+<li><p>使用jupyter notebook进行测试，方便展示验证码，比较识别结果</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这里参数说明(&#x27;code.png&#x27;, open(&#x27;code.png&#x27;, &#x27;rb&#x27;), &#x27;application&#x27;)，前面的code.png随意，可以与后面的open中的名称不一致；open(&#x27;code.png&#x27;, &#x27;rb&#x27;)实际上是参数需要一个bytes型的数据，直接传一个bytes型的数据也是可以的；&quot;application&quot;保持默认即可</span></span><br><span class="line">files = &#123;<span class="string">&#x27;image_file&#x27;</span>: (<span class="string">&#x27;code.png&#x27;</span>, <span class="built_in">open</span>(<span class="string">&#x27;code.png&#x27;</span>, <span class="string">&#x27;rb&#x27;</span>), <span class="string">&#x27;application&#x27;</span>)&#125;</span><br><span class="line"><span class="comment"># http://127.0.0.1:6000/b为默认的API URL，可以在webserver_recognize_api.py中修改</span></span><br><span class="line">r = requests.post(url=<span class="string">&#x27;http://127.0.0.1:6000/b&#x27;</span>, files=files)</span><br><span class="line">data = r.json()</span><br><span class="line">data</span><br></pre></td></tr></table></figure>
+
+<p>  <img src="/tutorial/2021/07/Discuz%E7%AE%80%E5%8D%95%E9%AA%8C%E8%AF%81%E7%A0%81%E8%AF%86%E5%88%AB/image-20210728120402589.png" alt="image-20210728120402589"></p>
+</li>
+<li><p>可以看到正确识别了CBXB，实际用某论坛的进行测试，图片准确率可达80%</p>
+</li>
+<li><p>至此可以用这个模型来进行一些使用了之类验证码的Discuz类论坛进行自动登录</p>
+</li>
+</ul>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/nickliqian/cnn_captcha">https://github.com/nickliqian/cnn_captcha</a></li>
+<li><a target="_blank" rel="noopener" href="https://cuijiahua.com/blog/2018/01/dl_5.html">Tensorflow实战（二）：Discuz验证码识别</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%99%E7%A8%8B/" rel="tag"># 教程</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%AA%8C%E8%AF%81%E7%A0%81/" rel="tag"># 验证码</a>
+              <a href="/tags/selenium/" rel="tag"># selenium</a>
+              <a href="/tags/python/" rel="tag"># python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/tutorial/2021/07/AOSP%E6%AC%A1%E7%BA%A7%E9%95%9C%E5%83%8F%E6%90%AD%E5%BB%BA/" rel="prev" title="AOSP次级镜像搭建">
+      <i class="fa fa-chevron-left"></i> AOSP次级镜像搭建
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/07/Docker%E5%AE%B9%E5%99%A8%E7%BC%96%E8%AF%91LineageOS%E7%AC%94%E8%AE%B0/" rel="next" title="Docker容器编译LineageOS笔记">
+      Docker容器编译LineageOS笔记 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5"><span class="nav-number">2.</span> <span class="nav-text">准备阶段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">3.</span> <span class="nav-text">开始</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E9%AA%8C%E8%AF%81%E7%A0%81%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.0.1.</span> <span class="nav-text">生成验证码数据集</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.0.2.</span> <span class="nav-text">训练模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E8%AF%86%E5%88%ABAPI-Server"><span class="nav-number">3.0.3.</span> <span class="nav-text">启动识别API Server</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E8%AF%86%E5%88%AB"><span class="nav-number">3.0.4.</span> <span class="nav-text">测试识别</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="nav-number">4.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '2436e6404d9e16f82c579b79860c583d',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+<meta name="google-site-verification" content="ylSSK-p1je-81qZjxXDMuL0IsT6dNCpdJl_G-FPDWwo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.iz4.cc","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="《逆向工程核心原理》第十六章基址重定位表 PE在重定位过程会用到基址重定位表（Base Relocation Table）  PE重定位 向进程的虚拟内存加载PE文件（EXE&#x2F;DLL&#x2F;SYS）时，文件会被加载到PE头的ImageBase所指的地址处。若加载的是DLL（SYS）文件，且在ImageBase位置处已经加载了其他DLL（SYS）文件，那么PE装载器就会将其加载到其他未">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《逆向工程核心原理》学习笔记9">
+<meta property="og:url" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/index.html">
+<meta property="og:site_name" content="CC的博客">
+<meta property="og:description" content="《逆向工程核心原理》第十六章基址重定位表 PE在重定位过程会用到基址重定位表（Base Relocation Table）  PE重定位 向进程的虚拟内存加载PE文件（EXE&#x2F;DLL&#x2F;SYS）时，文件会被加载到PE头的ImageBase所指的地址处。若加载的是DLL（SYS）文件，且在ImageBase位置处已经加载了其他DLL（SYS）文件，那么PE装载器就会将其加载到其他未">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203093559819.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203165924999.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203170131068.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203170641907.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203171330884.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/5.08.18.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203172950018.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203173426537.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203173512764.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203190923550.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214240651.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214917343.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214306702.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214321918.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203215505418.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214321918.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203220045686.png">
+<meta property="og:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203220542470.png">
+<meta property="article:published_time" content="2021-12-03T01:19:47.000Z">
+<meta property="article:modified_time" content="2024-10-16T05:19:17.091Z">
+<meta property="article:author" content="CC">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="逆向">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203093559819.png">
+
+<link rel="canonical" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《逆向工程核心原理》学习笔记9 | CC的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CC的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">没事就爱瞎折腾</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.iz4.cc/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CC">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CC的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《逆向工程核心原理》学习笔记9
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-03 09:19:47" itemprop="dateCreated datePublished" datetime="2021-12-03T09:19:47+08:00">2021-12-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 13:19:17" itemprop="dateModified" datetime="2024-10-16T13:19:17+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/note/" itemprop="url" rel="index"><span itemprop="name">note</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="《逆向工程核心原理》第十六章"><a href="#《逆向工程核心原理》第十六章" class="headerlink" title="《逆向工程核心原理》第十六章"></a>《逆向工程核心原理》第十六章</h3><h4 id="基址重定位表"><a href="#基址重定位表" class="headerlink" title="基址重定位表"></a>基址重定位表</h4><ul>
+<li>PE在重定位过程会用到基址重定位表（Base Relocation Table）</li>
+</ul>
+<h5 id="PE重定位"><a href="#PE重定位" class="headerlink" title="PE重定位"></a>PE重定位</h5><ul>
+<li><p>向进程的虚拟内存加载PE文件（EXE&#x2F;DLL&#x2F;SYS）时，文件会被加载到PE头的ImageBase所指的地址处。若加载的是DLL（SYS）文件，且在ImageBase位置处已经加载了其他DLL（SYS）文件，那么PE装载器就会将其加载到其他未被占用的空间。这就涉及到PE文件重定位的问题，PE重定位是指PE文件无法加载到ImageBase所指位置，而是被加载到其他地址时，发生的一系列的处理问题。</p>
+<blockquote>
+<p>使用SDK（Software Development Kit，软件开发工具包）或Visual C++创建的PE文件时，EXE默认的ImageBase为00400000，DLL默认的为ImageBase为10000000。此外使用DDK（Driver Development Kit，驱动开发工具包）创建的SYS文件默认的ImageBase为10000。</p>
+</blockquote>
+</li>
+<li><p>下图为DLL重定位示意图，A.DLL被加载到TEXT的10000000地址处。此后，B.DLL试图加载到相同地址（10000000）时，PE装载器将B.DLL加载到另一个尚未被占用的地址（3C000000）处。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203093559819.png" alt="image-20211203093559819"></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<ul>
+<li><p>创建好进程后，EXE文件会首先加载到内存，所以在EXE中无须考虑重定位的问题。但是Windows Vista之后的版本引入了ASLR安全机制，每次运行EXE文件都会被加载到随机地址，这样大大增加了系统安全性。下图为win10中三次用Ollydbg打开notepad.exe（win10 测试ASLR可能需要每次重启电脑，才会改变地址），可以看到EP起始地址不一样，说明运行时程序被随机加载到不同地址。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203165924999.png" alt="image-20211203165924999"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203170131068.png" alt="image-20211203170131068"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203170641907.png" alt="image-20211203170641907"></p>
+</li>
+</ul>
+<h5 id="PE重定位时执行的操作"><a href="#PE重定位时执行的操作" class="headerlink" title="PE重定位时执行的操作"></a>PE重定位时执行的操作</h5><ul>
+<li><p>下面以win10的notepad.exe程序为例，看看PE重定位时都发生了什么。如下图所示，notepad.exe的ImageBase.exe为&quot;00400000&quot;</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203171330884.png" alt="image-20211203171330884"></p>
+</li>
+<li><p>下图为Ollydbg查看的notepad.exe EP代码部分，从图中指令可以看到，方框中的进程地址都是以硬编码形式存在。这些地址值随加载地址的不同而改变，像这样，使硬编码在程序中的内存地址随当前加载地址变化而改变的处理过程就是PE重定位。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/5.08.18.png" alt="5.08.18"></p>
+</li>
+<li><p>无法加载到ImageBase地址时，若未进行过PE重定位处理，应用程序就不能正常运行（因发生&quot;内存地址引用错误&quot;，程序异常终止）</p>
+</li>
+</ul>
+<h5 id="PE重定位操作原理"><a href="#PE重定位操作原理" class="headerlink" title="PE重定位操作原理"></a>PE重定位操作原理</h5><ul>
+<li><p>Windows的PE装载器进行PE重定位处理时，基本的操作原理很简单</p>
+<ul>
+<li>在应用程序中查找硬编码的地址位置</li>
+<li>读取值后，减去ImageBase（VA&#x3D;&gt;RVA）</li>
+<li>加上实际加载地址（RVA&#x3D;&gt;VA）</li>
+</ul>
+</li>
+<li><p>最关键的是查找硬编码地址的位置。查找过程会用到PE文件内部的RelocationTable（重定位表），它是记录硬编码地址偏移（位置）的列表（重定位表是在PE文件构建过程（编译&#x2F;链接）中提供的）。通过重定位表查找，其实就是指根据PE头的&quot;基址重定位表&quot;项进行的查找。</p>
+</li>
+</ul>
+<h5 id="基址重定位表-1"><a href="#基址重定位表-1" class="headerlink" title="基址重定位表"></a>基址重定位表</h5><ul>
+<li><p>基址重定位表位于PE头的DataDirectory数组的第六个元素（数组索引为5），在PE View中查看notepad.exe的基址重定位表地址。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203172950018.png" alt="image-20211203172950018"></p>
+</li>
+<li><p>基址重定位表的地址为RVA 0002B000。使用PE View查看该地址，如下图所示设置以RVA地址查看</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203173426537.png" alt="image-20211203173426537"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203173512764.png" alt="image-20211203173512764"></p>
+</li>
+</ul>
+<h5 id="IMAGE-BASE-RELOCATION结构体"><a href="#IMAGE-BASE-RELOCATION结构体" class="headerlink" title="IMAGE_BASE_RELOCATION结构体"></a>IMAGE_BASE_RELOCATION结构体</h5><ul>
+<li><p>上图的基址重定位表中罗列了硬编码地址的偏移（位置）。读取这张表就能获得准确的硬编码地址偏移。基址重定位表是IMAGE_BASE_RELOCATION结构体数组。IMAGE_BASE_RELOCATION结构体的定义如下</p>
+  <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">_IMAGE_BASE_RELOCATION</span> &#123;</span><br><span class="line">    DWORD   VirtualAddress;</span><br><span class="line">    DWORD   SizeOfBlock;</span><br><span class="line"><span class="comment">//  WORD    TypeOffset[1];</span></span><br><span class="line">&#125; IMAGE_BASE_RELOCATION;</span><br><span class="line"><span class="keyword">typedef</span> IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>IMAGE_BASE_RELOCATION结构体的第一个成员为VirtualAddress，它是一个基准地址（Base Address），实际是RVA值。第二个成员为SizeOfBlock，指重定位快的大小。最后一位TypeOffset数组不是结构体成员，而是以注释的形式存在的，表示在该结构体之下会出现WORD类型的数组，并且该数组元素的值就是硬编码在程序中的地址偏移。</p>
+</li>
+</ul>
+<h5 id="基址重定位表的分析方法"><a href="#基址重定位表的分析方法" class="headerlink" title="基址重定位表的分析方法"></a>基址重定位表的分析方法</h5><ul>
+<li><p>下表列出了notepad.exe部分基址重定位表的部分内容</p>
+<table>
+<thead>
+<tr>
+<th align="center">RVA</th>
+<th align="center">数 据</th>
+<th align="center">注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">0002B000</td>
+<td align="center">00001000</td>
+<td align="center">VirtualAddress</td>
+</tr>
+<tr>
+<td align="center">0002B004</td>
+<td align="center">00000218</td>
+<td align="center">SizeOfBlock</td>
+</tr>
+<tr>
+<td align="center">0002B008</td>
+<td align="center">3000</td>
+<td align="center">TypeOffset</td>
+</tr>
+<tr>
+<td align="center">0002B00A</td>
+<td align="center">3004</td>
+<td align="center">TypeOffset</td>
+</tr>
+<tr>
+<td align="center">0002B00C</td>
+<td align="center">3008</td>
+<td align="center">TypeOffset</td>
+</tr>
+<tr>
+<td align="center">...</td>
+<td align="center">...</td>
+<td align="center">...</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>由IMAGE_BASE_RELOCATION结构体的定义可知，VirtualAddress成员（基准地址）的值为1000，SizeOfBlock成员的值为218。也就是说，上表显示的TypeOffset数组的基准地址（起始地址）为RVA 1000，块的总大小为150（这些块按照基准地址分类，以数组形式存在），块的末端显示为0。TypeOffset值为2个字节（16位）大小，是由4位的Type与12位的Offset合成的。比如TypeOffset值为3000，解析表如下</p>
+<table>
+<thead>
+<tr>
+<th align="center">类型（4位）</th>
+<th align="center">偏移（12位）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">3</td>
+<td align="center">000</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>高4位用作Type，PE文件中常见的值为3（IMAGE_REL_BASED_HIGHLOW），64位的PE+文件中常见值为A（IMAGE_REL_BASED_DIR64）。</p>
+<blockquote>
+<p>有时为了略去PE装载器的重定位过程，常常把Type值修改为0（IMAGE_REL_BASED_ABSOLUTE）</p>
+</blockquote>
+</li>
+<li><p>TypeOffset的低12位才是真正的偏移，该偏移值基于VirtualAddress的偏移。所以程序中的硬编码地址的偏移使用以下公式转换</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">VirtualAddress (1000) + Offset(0000) = 1000(RVA)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>下面看一下RVA 1000处是否实际存在要执行PE重定位操作的硬编码地址，notepad.exe被加载到004E0000 <code>EP(VA) - EP(RVA)</code>地址处，故RVA 1000即为004E1000（VA），该地址储存着地址005048D8，并且该值经过PE重定位发生了变化。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203190923550.png" alt="image-20211203190923550"></p>
+</li>
+</ul>
+<hr>
+<h3 id="逆向工程核心原理第十七章"><a href="#逆向工程核心原理第十七章" class="headerlink" title="逆向工程核心原理第十七章"></a>逆向工程核心原理第十七章</h3><h4 id="从可执行文件中删除-reloc节区"><a href="#从可执行文件中删除-reloc节区" class="headerlink" title="从可执行文件中删除.reloc节区"></a>从可执行文件中删除.reloc节区</h4><h5 id="reloc节区"><a href="#reloc节区" class="headerlink" title=".reloc节区"></a>.reloc节区</h5><ul>
+<li><p>EXE形式的PE文件中，&quot;基址重定位表&quot;项对运行没什么影响。实际上将其删除后程序仍能正常运行（基址重定位表对DLL&#x2F;SYS形式的文件来说几乎是必需的）</p>
+</li>
+<li><p>VC++中生成的PE文件的重定位节区名为.reloc，删除该节区后文件照常运行，且文件大小将缩减（实际上存在这种实用小程序）。.reloc节区一般位于所有节区的最后。</p>
+</li>
+<li><p>删除.relco节区需要按照以下4个步骤</p>
+<ul>
+<li>整理.reloc节区头</li>
+<li>删除.reloc节区</li>
+<li>修改IMAGE_FILE_HEADER</li>
+<li>修改IMAGE_OPTIONAL_HEADER</li>
+</ul>
+</li>
+<li><p>下面以前面用过的Tut.ReverseMe1.exe为例，删除.reloc节区，为了避免删除数据使文件偏移发生变化进而导致修改了错误的地址处数据，这里建议修改顺序按文件偏移低地址到高地址的顺序</p>
+</li>
+</ul>
+<h5 id="修改IMAGE-FILE-HEADER"><a href="#修改IMAGE-FILE-HEADER" class="headerlink" title="修改IMAGE_FILE_HEADER"></a>修改IMAGE_FILE_HEADER</h5><ul>
+<li><p>删除1个节区，需要首先修改IMAGE_FILE_HEADER的Number of Sections成员，可以看到该处偏移为86，用HEdit修改该处值为4</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214240651.png" alt="image-20211203214240651"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214917343.png" alt="image-20211203214917343"></p>
+</li>
+</ul>
+<h5 id="修改IMAGE-OPTIONAL-HEADER"><a href="#修改IMAGE-OPTIONAL-HEADER" class="headerlink" title="修改IMAGE_OPTIONAL_HEADER"></a>修改IMAGE_OPTIONAL_HEADER</h5><ul>
+<li><p>删除一个节区，（进程虚拟内存中）整个映像就随之减少相应大小。映像大小值储存在IMAGE_OPTIONAL_HEADER的Size of Image成员中，从下图可以看到Size of Image值为8000。问题在于，要计算减去多少才能让程序正常运行。根据下面的.reloc节区头的截图可以得知.reloc Virtual Size为272，但是由于Section Alignment值为1000，所以应该减去Section Alignment的整数倍（向上取整）。因此应修改Size of Image为7000，即用HEdit修改D0偏移处为7000即可。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214306702.png" alt="image-20211203214306702"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214321918.png" alt="image-20211203214321918"></p>
+</li>
+<li><p>HEdit修改Size of Image</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203215505418.png" alt="image-20211203215505418"></p>
+</li>
+</ul>
+<h5 id="删除-reloc节区头"><a href="#删除-reloc节区头" class="headerlink" title="删除.reloc节区头"></a>删除.reloc节区头</h5><ul>
+<li><p>下图为原exe文件的.reloc节区头截图，由图可知.reloc节区头从文件偏移218处开始，大小为28。使用Hex Editor将区域（218~239）全部用0覆盖，之所以用0覆盖而不直接删除是因为，如果直接删除，那么239之后的偏移都会发生改变，这样以来就需要修改更多的地方来解决这一问题。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203214321918.png" alt="image-20211203214321918"></p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203220045686.png" alt="image-20211203220045686"></p>
+</li>
+</ul>
+<h5 id="删除-reloc节区"><a href="#删除-reloc节区" class="headerlink" title="删除.reloc节区"></a>删除.reloc节区</h5><ul>
+<li><p>从上面的.reloc节区头截图可知.reloc节区文件的起始偏移为3600，用HEdit从3600偏移处到文件末端所有数据删除，这里因为是最后一个节区，所以直接删除对其他节区的文件偏移没有影响。</p>
+</li>
+<li><p>按以上4个步骤删除.reloc节区后，双击Tut.ReverseMe1.exe，可以发现程序仍能正常运行。</p>
+<p>  <img src="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B09/image-20211203220542470.png" alt="image-20211203220542470"></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B08/" rel="prev" title="《逆向工程核心原理》学习笔记8">
+      <i class="fa fa-chevron-left"></i> 《逆向工程核心原理》学习笔记8
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/note/2021/12/%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B010/" rel="next" title="《逆向工程核心原理》学习笔记10">
+      《逆向工程核心原理》学习笔记10 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E3%80%8A%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E3%80%8B%E7%AC%AC%E5%8D%81%E5%85%AD%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">《逆向工程核心原理》第十六章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E5%9D%80%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-number">1.1.</span> <span class="nav-text">基址重定位表</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#PE%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-number">1.1.1.</span> <span class="nav-text">PE重定位</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#PE%E9%87%8D%E5%AE%9A%E4%BD%8D%E6%97%B6%E6%89%A7%E8%A1%8C%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="nav-number">1.1.2.</span> <span class="nav-text">PE重定位时执行的操作</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#PE%E9%87%8D%E5%AE%9A%E4%BD%8D%E6%93%8D%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">1.1.3.</span> <span class="nav-text">PE重定位操作原理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9F%BA%E5%9D%80%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8-1"><span class="nav-number">1.1.4.</span> <span class="nav-text">基址重定位表</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#IMAGE-BASE-RELOCATION%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.1.5.</span> <span class="nav-text">IMAGE_BASE_RELOCATION结构体</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9F%BA%E5%9D%80%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8%E7%9A%84%E5%88%86%E6%9E%90%E6%96%B9%E6%B3%95"><span class="nav-number">1.1.6.</span> <span class="nav-text">基址重定位表的分析方法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%90%91%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E7%AC%AC%E5%8D%81%E4%B8%83%E7%AB%A0"><span class="nav-number">2.</span> <span class="nav-text">逆向工程核心原理第十七章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8E%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E4%B8%AD%E5%88%A0%E9%99%A4-reloc%E8%8A%82%E5%8C%BA"><span class="nav-number">2.1.</span> <span class="nav-text">从可执行文件中删除.reloc节区</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#reloc%E8%8A%82%E5%8C%BA"><span class="nav-number">2.1.1.</span> <span class="nav-text">.reloc节区</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9IMAGE-FILE-HEADER"><span class="nav-number">2.1.2.</span> <span class="nav-text">修改IMAGE_FILE_HEADER</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9IMAGE-OPTIONAL-HEADER"><span class="nav-number">2.1.3.</span> <span class="nav-text">修改IMAGE_OPTIONAL_HEADER</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-reloc%E8%8A%82%E5%8C%BA%E5%A4%B4"><span class="nav-number">2.1.4.</span> <span class="nav-text">删除.reloc节区头</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-reloc%E8%8A%82%E5%8C%BA"><span class="nav-number">2.1.5.</span> <span class="nav-text">删除.reloc节区</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CC</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <!-- <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span> -->
+  <span class="author" itemprop="copyrightHolder">CC</span>
+</div>
+
+<!--
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div> -->
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        总访客量
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        总访问量
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '60664dfb1da5c3b47586',
+      clientSecret: '681e841693edf1973a477724cb3e44a39b514a54',
+      repo        : 'cc-404.github.io',
+      owner       : 'cc-404',
+      admin       : ['cc-404'],
+      id          : '3ab571135f760bbe11fc584cf89f3f5b',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
